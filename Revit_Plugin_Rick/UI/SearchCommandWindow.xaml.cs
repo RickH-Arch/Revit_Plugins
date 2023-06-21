@@ -25,6 +25,7 @@ namespace Revit_Plugin_Rick.UI
         public SearchCommandWindow()
         {
             InitializeComponent();
+            search_input.Focus();
             finder = CommandFinder.Instance;
 
             //binding search_input
@@ -41,7 +42,7 @@ namespace Revit_Plugin_Rick.UI
 
         private void exit_Click(object sender, RoutedEventArgs e)
         {
-
+            this.Close();
         }
 
         private void search_input_TextChanged(object sender, TextChangedEventArgs e)
@@ -50,6 +51,43 @@ namespace Revit_Plugin_Rick.UI
             finder.RefreshFiltedCmdName();
         }
 
-        
+        private void search_input_KeyDown(object sender, KeyEventArgs e)
+        {
+            if(e.Key == Key.Down)
+            {
+                command_list.Focus();
+                command_list.SelectedIndex = 0;
+            }
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            SearchBoxToRibbon.textBox_search.Value = finder.Search_input;
+        }
+
+        private void command_list_KeyDown(object sender, KeyEventArgs e)
+        {
+            if(e.Key == Key.Enter)
+            {
+                var selectedItem = command_list.SelectedItem;
+                if(selectedItem != null)
+                {
+                    string cmdName = selectedItem.ToString();
+                    this.Close();
+                    finder.PostCommandByName(cmdName);
+                }
+            }
+        }
+
+        private void ListBoxIte_MouseDoubleClick(object sender,MouseButtonEventArgs e)
+        {
+            var selectedItem = command_list.SelectedItem;
+            if (selectedItem != null)
+            {
+                string cmdName = selectedItem.ToString();
+                this.Close();
+                finder.PostCommandByName(cmdName);
+            }
+        }
     }
 }

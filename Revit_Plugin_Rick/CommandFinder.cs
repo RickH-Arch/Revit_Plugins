@@ -12,9 +12,12 @@ using Autodesk.Revit.ApplicationServices;
 using Autodesk.Windows;
 using Revit_Plugin_Rick.UI;
 using System.Collections.ObjectModel;
+using System.Reflection;
+
 
 namespace Revit_Plugin_Rick
 {
+    [Transaction(TransactionMode.Manual)]
     public class CommandFinder : INotifyPropertyChanged,IExternalCommand
     {
         private static CommandFinder instance;
@@ -107,28 +110,43 @@ namespace Revit_Plugin_Rick
             return Execute(commandData.Application);
         }
 
+        private UIApplication uiapp;
+        private Document doc;
+        private Application app;
+
         public Result Execute(UIApplication uiapp)
         {
-
             #region Get all commands
             //get all commands
-            Document doc = uiapp.ActiveUIDocument.Document;
-            Application app = uiapp.Application;
-            RibbonControl control = ComponentManager.Ribbon;
+            this.uiapp = uiapp;
+            doc = uiapp.ActiveUIDocument.Document;
+            app = uiapp.Application;
+            
+            
 
             if(cmdName.Count == 0)
             {
                 //get revit command
-                cmdName.AddRange((IEnumerable<string>)Enum.GetNames(typeof(PostableCommand)));
-                foreach(var e in Enum.GetValues(typeof(PostableCommand)))
+                var names = Enum.GetNames(typeof(PostableCommand)).ToList();
+                var values = new List<int>((IEnumerable<int>)Enum.GetValues(typeof(PostableCommand)));
+                for (int i = 0; i < values.Count(); i++)
                 {
-                    var id = RevitCommandId.LookupPostableCommandId((PostableCommand)e);
-                    cmdId.Add(id);
-                    
+                    try
+                    {
+                        var id = RevitCommandId.LookupPostableCommandId((PostableCommand)values[i]);
+                        if (id != null && uiapp.CanPostCommand(id))
+                        {
+                            cmdId.Add(id);
+                            cmdName.Add(names[i]);
+                        }
+                    }
+                    catch { }
                 }
 
+
                 //get external command
-                foreach(var tab in control.Tabs)
+                RibbonControl control = ComponentManager.Ribbon;
+                foreach (var tab in control.Tabs)
                 {
                     foreach(var panel in tab.Panels)
                     {
@@ -140,17 +158,51 @@ namespace Revit_Plugin_Rick
                                 if(cmd.Name != null && !cmdName.Contains(cmd.Name))
                                 {
                                     var commandId = RevitCommandId.LookupCommandId(cmd.Id);
-                                    if (!cmdId.Contains(commandId))
+                                    if(commandId != null)
                                     {
+                                        if (!cmdId.Contains(commandId)&& uiapp.CanPostCommand(commandId))
+                                        {
+                                            bool hasSameId = false;
+                                            foreach(var cmdid in cmdId)
+                                            {
+                                                if (cmdid.Id == commandId.Id)
+                                                    hasSameId = true;
+                                            }
+                                            if (!hasSameId)
+                                            {
 
-                                        cmdName.Add(cmd.Name);
-                                        cmdId.Add(commandId);
+                                                cmdName.Add(cmd.Name);
+                                                cmdId.Add(commandId);
+                                            }
+                                        
+                                        }
                                     }
+                                    
                                 }
                             }
                         }
                     }
                 }
+               
+                //seems no use
+                /*IEnumerable<Assembly> loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+                foreach(Assembly assembly in loadedAssemblies)
+                {
+                    IEnumerable<Type> commandTypes = assembly.GetTypes().Where(type =>
+            type.GetInterfaces().Contains(typeof(IExternalCommand)) &&
+            type.GetCustomAttributes(typeof(TransactionAttribute), true).Length > 0);
+                    foreach(Type commandType in commandTypes)
+                    {
+                        // 获取外部命令的名称
+                        string commandName = GetCommandName(commandType);
+
+                        // 获取外部命令的CommandId
+                        string className = commandType.FullName;
+                        RevitCommandId commandId = RevitCommandId.LookupCommandId(className);
+
+                        
+                    }
+                }*/
             }
 
             #endregion
@@ -187,6 +239,18 @@ namespace Revit_Plugin_Rick
                 }
             }
         }
+
+        public void PostCommandByName(string cmdN)
+        {
+            int ind = cmdName.IndexOf(cmdN);
+            var cmdid = cmdId[ind];
+            if (uiapp.CanPostCommand(cmdid))
+            {
+                uiapp.PostCommand(cmdid);
+            }
+            
+        }
+
 
         class StringSimilarityComparer : IComparer<string>
         {
@@ -242,7 +306,7 @@ namespace Revit_Plugin_Rick
             }
         }
 
-        
+       
 
 
     }

@@ -22,6 +22,8 @@ namespace Revit_Plugin_Rick
         CommandFinder finder = CommandFinder.Instance;
         UIApplication uiapp;
 
+        public static TextBox textBox_search;
+
         public Result OnShutdown(UIControlledApplication application)
         {
             return Result.Succeeded;
@@ -30,12 +32,13 @@ namespace Revit_Plugin_Rick
         public Result OnStartup(UIControlledApplication application)
         {
             application.ControlledApplication.ApplicationInitialized += ControlledApplication_ApplicationInitialized;
-
+            
             Autodesk.Revit.UI.RibbonPanel panel = CreateRibbonPanel(application, "BIM效率工具", "command");
 
             //search box
             TextBoxData textBoxData = new TextBoxData("SearchBoxText");
-            var textBox_search = panel.AddItem(textBoxData) as TextBox;
+            textBox_search = panel.AddItem(textBoxData) as TextBox;
+            textBox_search.Width = 200;
             textBox_search.PromptText = "在此输入要搜索的命令";
             textBox_search.EnterPressed += new EventHandler<TextBoxEnterPressedEventArgs>(TextBox_search_EnterPressed);
             //button

@@ -54,6 +54,7 @@
     </Reference>
     <Reference Include="Autodesk.UI.Windows">
       <HintPath>..\..\..\..\..\..\..\Program Files\Autodesk\Revit 2020\Autodesk.UI.Windows.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
