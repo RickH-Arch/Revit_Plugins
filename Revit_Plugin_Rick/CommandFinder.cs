@@ -40,7 +40,7 @@ namespace Revit_Plugin_Rick
 
         }
 
-        
+        private CommandFrequencyRecorder recorder = CommandFrequencyRecorder.Instance;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -223,16 +223,35 @@ namespace Revit_Plugin_Rick
 
         public void RefreshFiltedCmdName()
         {
-            FiltedCmdName = cmdName.FindAll(x => x.IndexOf(search_input,StringComparison.OrdinalIgnoreCase) >= 0);
-            FiltedCmdName.Sort(new StringSimilarityComparer(search_input));
+            filtedCmdName = cmdName.FindAll(x => x.IndexOf(search_input,StringComparison.OrdinalIgnoreCase) >= 0);
+            filtedCmdName.Sort(new StringSimilarityComparer(search_input));
+
+            //get all cmdName contained in cmdFreqRecorder
+            List<string> cmdNameCache = new List<string>();
+            List<int> cmdFreqCache = new List<int>();
+            for(int i = 0; i < filtedCmdName.Count; i++)
+            {
+                if (recorder.CmdFrequency.ContainsKey(filtedCmdName[i]))
+                {
+                    cmdNameCache.Add(filtedCmdName[i]);
+                    cmdFreqCache.Add(recorder.CmdFrequency[filtedCmdName[i]]);
+                    filtedCmdName.RemoveAt(i);
+                    i--;
+                }
+            }
+            var sortedList = cmdNameCache.OrderByDescending(str => cmdFreqCache[cmdNameCache.IndexOf(str)]).ToList();
+
+            filtedCmdName.InsertRange(0, sortedList);
+
+
             if(BindingCmdName == null)
             {
-                BindingCmdName = new ObservableCollection<string>(FiltedCmdName);
+                BindingCmdName = new ObservableCollection<string>(filtedCmdName);
             }
             else
             {
                 BindingCmdName.Clear();
-                foreach (var item in FiltedCmdName)
+                foreach (var item in filtedCmdName)
                 {
                     var id = cmdId[cmdName.IndexOf(item)];
                     BindingCmdName.Add(item);
@@ -248,7 +267,7 @@ namespace Revit_Plugin_Rick
             {
                 uiapp.PostCommand(cmdid);
             }
-            
+            recorder.AddCommandFreq(cmdN);
         }
 
 

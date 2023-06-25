@@ -1,10 +1,8 @@
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\bin\x64\Debug\Revit_Plugin_Rick.dll
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\bin\x64\Debug\Revit_Plugin_Rick.pdb
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\obj\x64\Debug\Revit_Plugin_Rick.csproj.AssemblyReference.cache
-C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\obj\x64\Debug\SimpleForm.g.cs
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\obj\x64\Debug\Revit_Plugin_Rick_MarkupCompile.cache
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\obj\x64\Debug\Revit_Plugin_Rick_MarkupCompile.lref
-C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\obj\x64\Debug\SimpleForm.baml
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\obj\x64\Debug\Revit_Plugin_Rick.g.resources
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\obj\x64\Debug\Revit_Plugin_Rick.csproj.CoreCompileInputs.cache
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\obj\x64\Debug\Revit_Plugin_Rick.dll
@@ -27,3 +25,5 @@ C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\bin\x
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\bin\x64\Debug\ru-RU\AdWindows.resources.dll
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\bin\x64\Debug\zh-CN\AdWindows.resources.dll
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\bin\x64\Debug\zh-TW\AdWindows.resources.dll
+C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\bin\x64\Debug\Newtonsoft.Json.dll
+C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\bin\x64\Debug\Newtonsoft.Json.xml
