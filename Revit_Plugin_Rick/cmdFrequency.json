@@ -1,6 +1,6 @@
 {
-  "ArchitecturalWall": 2,
+  "ArchitecturalWall": 4,
   "WallOpening": 1,
-  "WallJoins": 2,
+  "WallJoins": 3,
   "ModelText": 1
 }

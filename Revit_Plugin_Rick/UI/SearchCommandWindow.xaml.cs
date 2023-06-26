@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 
 namespace Revit_Plugin_Rick.UI
 {
@@ -35,7 +39,8 @@ namespace Revit_Plugin_Rick.UI
             this.search_input.SetBinding(TextBox.TextProperty, binding);
 
             //binding listbox
-            this.command_list.ItemsSource = finder.BindingCmdName;
+            this.command_list.ItemsSource = finder.CmdInfoWrap;
+
 
         }
 
@@ -72,7 +77,8 @@ namespace Revit_Plugin_Rick.UI
                 var selectedItem = command_list.SelectedItem;
                 if(selectedItem != null)
                 {
-                    string cmdName = selectedItem.ToString();
+                    var item = selectedItem as CommandFinder.RevitCommandInfoWrap;
+                    string cmdName = item.Name;
                     this.Close();
                     finder.PostCommandByName(cmdName);
                 }
@@ -84,10 +90,45 @@ namespace Revit_Plugin_Rick.UI
             var selectedItem = command_list.SelectedItem;
             if (selectedItem != null)
             {
-                string cmdName = selectedItem.ToString();
+                var item = selectedItem as CommandFinder.RevitCommandInfoWrap;
+                string cmdName = item.Name;
                 this.Close();
                 finder.PostCommandByName(cmdName);
             }
         }
+    
+
+    }
+    public class BitmapToImageSourceConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            Bitmap bitmap = value as Bitmap;
+            if (bitmap != null)
+            {
+                // turn bitmap to ImageSource
+                var bitmapImage = new BitmapImage();
+                using (MemoryStream stream = new MemoryStream())
+                {
+                    bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Bmp);
+                    stream.Position = 0;
+                    bitmapImage.BeginInit();
+                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmapImage.StreamSource = stream;
+                    bitmapImage.EndInit();
+                }
+                return bitmapImage;
+            }
+            return null;
+        }
+
+
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+
+
     }
 }

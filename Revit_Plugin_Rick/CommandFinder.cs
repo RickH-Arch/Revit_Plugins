@@ -13,7 +13,10 @@ using Autodesk.Windows;
 using Revit_Plugin_Rick.UI;
 using System.Collections.ObjectModel;
 using System.Reflection;
-
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace Revit_Plugin_Rick
 {
@@ -66,6 +69,7 @@ namespace Revit_Plugin_Rick
         private List<RevitCommandId> cmdId;
         private List<string> filtedCmdName;
         private ObservableCollection<string>bindingCmdName;
+        private ObservableCollection<RevitCommandInfoWrap> cmdInfoWrap;
 
         public List<string> CmdName
         {
@@ -105,6 +109,30 @@ namespace Revit_Plugin_Rick
             }
         }
 
+        public ObservableCollection<RevitCommandInfoWrap> CmdInfoWrap
+        {
+            get
+            {
+                return cmdInfoWrap;
+            }
+            set
+            {
+                cmdInfoWrap = value;
+                if(this.PropertyChanged != null)
+                {
+                    this.PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(CmdInfoWrap)));
+                }
+            }
+        }
+
+        //List<Bitmap> bitmaps = new List<Bitmap>();
+        List<ImageSource> image_sources = new List<ImageSource>();
+        List<string> image_names = new List<string>();
+        List<RevitCommandId> image_commandId = new List<RevitCommandId>();
+
+
+        //====================================================================================================//
+
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             return Execute(commandData.Application);
@@ -126,7 +154,6 @@ namespace Revit_Plugin_Rick
 
             if(cmdName.Count == 0)
             {
-                //get revit command
                 var names = Enum.GetNames(typeof(PostableCommand)).ToList();
                 var values = new List<int>((IEnumerable<int>)Enum.GetValues(typeof(PostableCommand)));
                 for (int i = 0; i < values.Count(); i++)
@@ -153,37 +180,38 @@ namespace Revit_Plugin_Rick
                         RibbonItemEnumerator itor = panel.Source.GetItemEnumerator();
                         while (itor.MoveNext())
                         {
-                            if(itor.Current is RibbonCommandItem cmd)
+                            if(itor.Current.GetType() == typeof(RibbonCheckBox))
                             {
-                                if(cmd.Name != null && !cmdName.Contains(cmd.Name))
+                                continue;
+                            }
+                            if (itor.Current.GetType() == typeof(RibbonSplitButton))
+                            {
+                                var splitButton = itor.Current as RibbonSplitButton;
+                                var buttons = splitButton.Items;
+                                foreach(var button in buttons)
                                 {
-                                    var commandId = RevitCommandId.LookupCommandId(cmd.Id);
-                                    if(commandId != null)
+                                    var b= button as RibbonCommandItem;
+                                    if(b != null)
                                     {
-                                        if (!cmdId.Contains(commandId)&& uiapp.CanPostCommand(commandId))
-                                        {
-                                            bool hasSameId = false;
-                                            foreach(var cmdid in cmdId)
-                                            {
-                                                if (cmdid.Id == commandId.Id)
-                                                    hasSameId = true;
-                                            }
-                                            if (!hasSameId)
-                                            {
-
-                                                cmdName.Add(cmd.Name);
-                                                cmdId.Add(commandId);
-                                            }
-                                        
-                                        }
+                                        CollectIconInfo(b);
+                                        AddCmdNameAndId(b);
                                     }
-                                    
+                                }
+                            }
+                            else
+                            {
+                                var cmd = itor.Current as RibbonCommandItem;
+                                if(cmd!= null)
+                                {
+                                    CollectIconInfo(cmd);
+                                    AddCmdNameAndId(cmd);
                                 }
                             }
                         }
                     }
                 }
-               
+
+                #region test function
                 //seems no use
                 /*IEnumerable<Assembly> loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
                 foreach(Assembly assembly in loadedAssemblies)
@@ -203,9 +231,31 @@ namespace Revit_Plugin_Rick
                         
                     }
                 }*/
+
+                /*#region get command icon and id
+                foreach(var tab in control.Tabs)
+                {
+                    foreach(var p in tab.Panels)
+                    {
+                        RibbonItemEnumerator itor = p.Source.GetItemEnumerator();
+                        while (itor.MoveNext())
+                        {
+                            if (itor.Current is RibbonCommandItem cmd)
+                            {
+                                bitmaps.Add(ImageSourceToBitmap(cmd.LargeImage));
+                                bitmap_names.Add(cmd.Name);
+                                bitmap_commandId.Add(RevitCommandId.LookupCommandId(cmd.Id));
+                            }
+                        }
+                    }
+                }
+
+                #endregion*/
+                #endregion
             }
 
             #endregion
+
 
 
             //refresh filtedCmdName
@@ -221,6 +271,61 @@ namespace Revit_Plugin_Rick
             return Result.Succeeded;
         }
 
+        private void AddCmdNameAndId(RibbonCommandItem cmd)
+        {
+            if (cmd.Name != null && !cmdName.Contains(cmd.Name))
+            {
+                var commandId = RevitCommandId.LookupCommandId(cmd.Id);
+                if (commandId != null)
+                {
+
+                    if (!cmdId.Contains(commandId) && uiapp.CanPostCommand(commandId))
+                    {
+
+                        //add if no same id in PostedCommand
+                        bool hasSameId = false;
+                        foreach (var cmdid in cmdId)
+                        {
+                            if (cmdid.Id == commandId.Id)
+                                hasSameId = true;
+                        }
+                        if (!hasSameId)
+                        {
+
+                            cmdName.Add(cmd.Name);
+                            cmdId.Add(commandId);
+                        }
+
+                    }
+                }
+
+            }
+        }
+
+        /// <summary>
+        /// collect all button icons in ribbon, only run once
+        /// </summary>
+        /// <param name="cmd"></param>
+        private void CollectIconInfo(RibbonCommandItem cmd)
+        {
+            if(cmd.Id == "")
+            {
+                return;
+            }
+            var commandId = RevitCommandId.LookupCommandId(cmd.Id);
+            if(commandId != null)
+            {
+                //bitmaps.Add(ImageSourceToBitmap(cmd.LargeImage));
+                image_sources.Add(cmd.LargeImage);
+                image_names.Add(cmd.Name);
+                image_commandId.Add(RevitCommandId.LookupCommandId(cmd.Id));
+            }
+        }
+
+
+        /// <summary>
+        /// 刷新过滤出的结果
+        /// </summary>
         public void RefreshFiltedCmdName()
         {
             filtedCmdName = cmdName.FindAll(x => x.IndexOf(search_input,StringComparison.OrdinalIgnoreCase) >= 0);
@@ -257,8 +362,23 @@ namespace Revit_Plugin_Rick
                     BindingCmdName.Add(item);
                 }
             }
+
+            if(CmdInfoWrap == null)
+            {
+                CmdInfoWrap = new ObservableCollection<RevitCommandInfoWrap>();
+            }
+            CmdInfoWrap.Clear();
+            foreach(var name in filtedCmdName)
+            {
+                var id = cmdId[cmdName.IndexOf(name)];
+                CmdInfoWrap.Add(new RevitCommandInfoWrap(id));
+            }
         }
 
+        /// <summary>
+        /// 根据名称触发命令
+        /// </summary>
+        /// <param name="cmdN"></param>
         public void PostCommandByName(string cmdN)
         {
             int ind = cmdName.IndexOf(cmdN);
@@ -270,7 +390,21 @@ namespace Revit_Plugin_Rick
             recorder.AddCommandFreq(cmdN);
         }
 
+        private Bitmap ImageSourceToBitmap(ImageSource imageSource)
+        {
+            if(imageSource is BitmapSource bitmapSource)
+            {
+                Bitmap bitmap = new Bitmap(bitmapSource.PixelWidth, bitmapSource.PixelHeight, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                BitmapData data = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                bitmapSource.CopyPixels(System.Windows.Int32Rect.Empty, data.Scan0, data.Height * data.Stride, data.Stride);
+                bitmap.UnlockBits(data);
 
+                return bitmap;
+            }
+            return null;
+        }
+
+        
         class StringSimilarityComparer : IComparer<string>
         {
 
@@ -325,7 +459,50 @@ namespace Revit_Plugin_Rick
             }
         }
 
-       
+
+        /// <summary>
+        /// 打包Revit Command信息
+        /// </summary>
+        public class RevitCommandInfoWrap
+        {
+            public string Name{get;set ;}
+            public RevitCommandId CommandId { get; set; }
+            //public Bitmap Bitmap { get; set; }
+            //public Image Image { get; set; }
+            public ImageSource ImageSource { get; set; }
+
+            public RevitCommandInfoWrap(RevitCommandId commandId)
+            {
+                int ind = CommandFinder.Instance.cmdId.IndexOf(commandId);
+                if (ind != -1)
+                {
+                    this.Name = CommandFinder.Instance.cmdName[ind];
+                    this.CommandId = commandId;
+                    int ndx = -1;
+                    for(int i = 0; i < CommandFinder.Instance.image_commandId.Count; i++)
+                    {
+                        if(CommandFinder.Instance.image_commandId[i].Id == commandId.Id)
+                        {
+                            ndx = i;
+                            break;
+                        }
+                    }
+                    if(ndx != -1)
+                    {
+                        //this.Bitmap = CommandFinder.Instance.bitmaps[ndx];
+                        this.ImageSource = CommandFinder.Instance.image_sources[ndx];
+                    }
+                    else
+                    {
+                        //this.Bitmap = new Bitmap(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\Resources\Bitmaps\empty.bmp");
+                        this.ImageSource = new BitmapImage(new Uri(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\Resources\Bitmaps\empty.bmp"));
+
+                    }
+                    //Image = Bitmap;
+                    
+                }
+            }
+        }
 
 
     }

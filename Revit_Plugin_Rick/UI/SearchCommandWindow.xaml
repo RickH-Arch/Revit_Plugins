@@ -7,6 +7,9 @@
              mc:Ignorable="d" 
              Width="450" Height="650" Title="command finder"
              Closing="Window_Closing">
+    <Window.Resources>
+        <local:BitmapToImageSourceConverter x:Key="BitmapToImageSourveConverter"/>
+    </Window.Resources>
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="0.7*"/>
@@ -32,6 +35,14 @@
                     <EventSetter Event="MouseDoubleClick" Handler="ListBoxIte_MouseDoubleClick"/>
                 </Style>
             </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="{Binding Path=ImageSource}" Width="30" Height="30" Margin="5"/>
+                        <TextBlock Text="{Binding Path=Name}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
         </ListBox>
         <Grid Grid.Row="3" Height="40" Margin="20 5 20 5">
             <Grid.ColumnDefinitions>
