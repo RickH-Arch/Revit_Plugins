@@ -23,7 +23,7 @@ namespace Revit_Plugin_Rick
             }
         }
 
-        private string jsonPath = @"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\cmdFrequency.json";
+        private string jsonPath = @"cmdFrequency.json";
 
         private Dictionary<string, int> cmdFrequency;
         public Dictionary<string,int> CmdFrequency

@@ -153,7 +153,13 @@ namespace Revit_Plugin_Rick
             
 
             if(cmdName.Count == 0)
+            //if(true)
             {
+                //cmdName.Clear();
+                //cmdId.Clear();
+                //image_commandId.Clear();
+                //image_names.Clear();
+                //image_sources.Clear();
                 var names = Enum.GetNames(typeof(PostableCommand)).ToList();
                 var values = new List<int>((IEnumerable<int>)Enum.GetValues(typeof(PostableCommand)));
                 for (int i = 0; i < values.Count(); i++)
@@ -273,30 +279,44 @@ namespace Revit_Plugin_Rick
 
         private void AddCmdNameAndId(RibbonCommandItem cmd)
         {
-            if (cmd.Name != null && !cmdName.Contains(cmd.Name))
+            string button_name = cmd.AutomationName;
+            if (button_name.Contains("\r"))
             {
-                var commandId = RevitCommandId.LookupCommandId(cmd.Id);
-                if (commandId != null)
+                button_name = button_name.Replace("\r", "");
+            }
+            if (button_name.Contains("\n"))
+            {
+                button_name = button_name.Replace("\n", "");
+            }
+            if (button_name != null && button_name != "" && !cmdName.Contains(button_name))
+            {
+                if(cmd.Id == "")
                 {
-
-                    if (!cmdId.Contains(commandId) && uiapp.CanPostCommand(commandId))
+                    return;
+                }
+                var commandId = RevitCommandId.LookupCommandId(cmd.Id);
+                if (commandId != null && uiapp.CanPostCommand(commandId))
+                {
+                    
+                    int idx = -1;
+                    for(int i = 0; i < cmdId.Count; i++)
                     {
-
-                        //add if no same id in PostedCommand
-                        bool hasSameId = false;
-                        foreach (var cmdid in cmdId)
+                        if(cmdId[i].Id == commandId.Id)
                         {
-                            if (cmdid.Id == commandId.Id)
-                                hasSameId = true;
+                            idx = i;
                         }
-                        if (!hasSameId)
-                        {
-
-                            cmdName.Add(cmd.Name);
-                            cmdId.Add(commandId);
-                        }
-
                     }
+
+                    if(idx != -1)
+                    {
+                        cmdName[idx] = button_name;
+                    }
+                    else
+                    {
+                        cmdName.Add(button_name);
+                        cmdId.Add(commandId);
+                    }
+                    
                 }
 
             }
@@ -317,8 +337,8 @@ namespace Revit_Plugin_Rick
             {
                 //bitmaps.Add(ImageSourceToBitmap(cmd.LargeImage));
                 image_sources.Add(cmd.LargeImage);
-                image_names.Add(cmd.Name);
-                image_commandId.Add(RevitCommandId.LookupCommandId(cmd.Id));
+                image_names.Add(cmd.AutomationName);
+                image_commandId.Add(commandId);
             }
         }
 
@@ -494,9 +514,13 @@ namespace Revit_Plugin_Rick
                     }
                     else
                     {
+                        //Uri baseUri = new Uri( Assembly.GetExecutingAssembly().Location);
+                        //Uri targetUri = new Uri("C:\\Users\\ricks\\OneDrive\\_EVENTS_\\revit\\Revit_Plugin_Rick\\Revit_Plugin_Rick\\Resources\\Bitmaps\\empty.bmp");
+                        //Uri relativeUri = baseUri.MakeRelativeUri(targetUri);
+                        //string relativePath = Uri.UnescapeDataString(relativeUri.ToString());
                         //this.Bitmap = new Bitmap(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\Resources\Bitmaps\empty.bmp");
-                        this.ImageSource = new BitmapImage(new Uri(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\Resources\Bitmaps\empty.bmp"));
-
+                        this.ImageSource = new BitmapImage(new Uri(@"../../../Resources/Bitmaps/empty.bmp",UriKind.Relative));
+                        ImageSource ImageSource2 = new BitmapImage(new Uri(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\Resources\Bitmaps\empty.bmp"));
                     }
                     //Image = Bitmap;
                     
