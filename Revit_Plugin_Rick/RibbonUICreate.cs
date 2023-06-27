@@ -19,7 +19,7 @@ namespace Revit_Plugin_Rick
 {
     class RibbonUICreate : IExternalApplication
     {
-        CommandFinder finder = CommandFinder.Instance;
+        Cmd_CommandFinder finder = Cmd_CommandFinder.Instance;
         UIApplication uiapp;
 
         public static TextBox textBox_search;
@@ -35,6 +35,7 @@ namespace Revit_Plugin_Rick
             
             Autodesk.Revit.UI.RibbonPanel panel = CreateRibbonPanel(application, "BIM效率工具", "search");
 
+            //--- command search ---
             //search box
             TextBoxData textBoxData = new TextBoxData("SearchBoxText");
             textBox_search = panel.AddItem(textBoxData) as TextBox;
@@ -45,7 +46,19 @@ namespace Revit_Plugin_Rick
             //PushButtonData searchButtonData = new PushButtonData("search", "search", Assembly.GetExecutingAssembly().Location, "Revit_Plugin_Rick.SearchBoxToRibbon");
             //PushButton searchButton = panel.AddItem(searchButtonData) as PushButton;
             //searchButton.LargeImage = new BitmapImage(new Uri(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\PNG\search.png"));
-            
+
+
+            //--- region fill ---
+            panel = CreateRibbonPanel(application, "BIM效率工具", "fill");
+            //button
+            string assemblyPath = Assembly.GetExecutingAssembly().Location;
+            string regionFillClass = "Revit_Plugin_Rick.Cmd_RegionFill";
+
+            PushButtonData btnd_regionFill = new PushButtonData("区域填充", "区域填充", assemblyPath, regionFillClass);
+            PushButton btn_regionFill = panel.AddItem(btnd_regionFill) as PushButton;
+            btn_regionFill.LargeImage = new BitmapImage(new Uri(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\Resources\PNG\区域.png"));
+
+
             
             return Result.Succeeded;
         }

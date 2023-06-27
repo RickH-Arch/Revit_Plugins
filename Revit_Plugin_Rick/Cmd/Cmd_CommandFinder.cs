@@ -21,17 +21,17 @@ using System.Drawing.Imaging;
 namespace Revit_Plugin_Rick
 {
     [Transaction(TransactionMode.Manual)]
-    public class CommandFinder : INotifyPropertyChanged,IExternalCommand
+    public class Cmd_CommandFinder : INotifyPropertyChanged,IExternalCommand
     {
-        private static CommandFinder instance;
+        private static Cmd_CommandFinder instance;
 
-        public static CommandFinder Instance
+        public static Cmd_CommandFinder Instance
         {
             get
             {
                 if(instance == null)
                 {
-                    instance = new CommandFinder()
+                    instance = new Cmd_CommandFinder()
                     {
                         cmdName = new List<string>(),
                         cmdId = new List<RevitCommandId>()
@@ -493,15 +493,15 @@ namespace Revit_Plugin_Rick
 
             public RevitCommandInfoWrap(RevitCommandId commandId)
             {
-                int ind = CommandFinder.Instance.cmdId.IndexOf(commandId);
+                int ind = Cmd_CommandFinder.Instance.cmdId.IndexOf(commandId);
                 if (ind != -1)
                 {
-                    this.Name = CommandFinder.Instance.cmdName[ind];
+                    this.Name = Cmd_CommandFinder.Instance.cmdName[ind];
                     this.CommandId = commandId;
                     int ndx = -1;
-                    for(int i = 0; i < CommandFinder.Instance.image_commandId.Count; i++)
+                    for(int i = 0; i < Cmd_CommandFinder.Instance.image_commandId.Count; i++)
                     {
-                        if(CommandFinder.Instance.image_commandId[i].Id == commandId.Id)
+                        if(Cmd_CommandFinder.Instance.image_commandId[i].Id == commandId.Id)
                         {
                             ndx = i;
                             break;
@@ -510,7 +510,7 @@ namespace Revit_Plugin_Rick
                     if(ndx != -1)
                     {
                         //this.Bitmap = CommandFinder.Instance.bitmaps[ndx];
-                        this.ImageSource = CommandFinder.Instance.image_sources[ndx];
+                        this.ImageSource = Cmd_CommandFinder.Instance.image_sources[ndx];
                     }
                     else
                     {

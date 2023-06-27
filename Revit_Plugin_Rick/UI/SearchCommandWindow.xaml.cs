@@ -24,13 +24,13 @@ namespace Revit_Plugin_Rick.UI
     /// </summary>
     public partial class SearchCommandWindow : Window
     {
-        CommandFinder finder;
+        Cmd_CommandFinder finder;
 
         public SearchCommandWindow()
         {
             InitializeComponent();
             search_input.Focus();
-            finder = CommandFinder.Instance;
+            finder = Cmd_CommandFinder.Instance;
 
             //binding search_input
             Binding binding = new Binding();
@@ -77,7 +77,7 @@ namespace Revit_Plugin_Rick.UI
                 var selectedItem = command_list.SelectedItem;
                 if(selectedItem != null)
                 {
-                    var item = selectedItem as CommandFinder.RevitCommandInfoWrap;
+                    var item = selectedItem as Cmd_CommandFinder.RevitCommandInfoWrap;
                     string cmdName = item.Name;
                     this.Close();
                     finder.PostCommandByName(cmdName);
@@ -90,7 +90,7 @@ namespace Revit_Plugin_Rick.UI
             var selectedItem = command_list.SelectedItem;
             if (selectedItem != null)
             {
-                var item = selectedItem as CommandFinder.RevitCommandInfoWrap;
+                var item = selectedItem as Cmd_CommandFinder.RevitCommandInfoWrap;
                 string cmdName = item.Name;
                 this.Close();
                 finder.PostCommandByName(cmdName);
