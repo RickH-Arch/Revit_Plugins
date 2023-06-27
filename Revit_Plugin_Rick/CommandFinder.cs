@@ -520,7 +520,7 @@ namespace Revit_Plugin_Rick
                         //string relativePath = Uri.UnescapeDataString(relativeUri.ToString());
                         //this.Bitmap = new Bitmap(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\Resources\Bitmaps\empty.bmp");
                         this.ImageSource = new BitmapImage(new Uri(@"../../../Resources/Bitmaps/empty.bmp",UriKind.Relative));
-                        ImageSource ImageSource2 = new BitmapImage(new Uri(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\Resources\Bitmaps\empty.bmp"));
+                        //ImageSource ImageSource2 = new BitmapImage(new Uri(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\Resources\Bitmaps\empty.bmp"));
                     }
                     //Image = Bitmap;
                     

@@ -17,7 +17,7 @@ using Revit_Plugin_Rick.UI;
 
 namespace Revit_Plugin_Rick
 {
-    class SearchBoxToRibbon : IExternalApplication
+    class RibbonUICreate : IExternalApplication
     {
         CommandFinder finder = CommandFinder.Instance;
         UIApplication uiapp;
@@ -33,7 +33,7 @@ namespace Revit_Plugin_Rick
         {
             application.ControlledApplication.ApplicationInitialized += ControlledApplication_ApplicationInitialized;
             
-            Autodesk.Revit.UI.RibbonPanel panel = CreateRibbonPanel(application, "BIM效率工具", "command");
+            Autodesk.Revit.UI.RibbonPanel panel = CreateRibbonPanel(application, "BIM效率工具", "search");
 
             //search box
             TextBoxData textBoxData = new TextBoxData("SearchBoxText");

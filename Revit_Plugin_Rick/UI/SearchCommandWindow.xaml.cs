@@ -67,7 +67,7 @@ namespace Revit_Plugin_Rick.UI
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            SearchBoxToRibbon.textBox_search.Value = finder.Search_input;
+            RibbonUICreate.textBox_search.Value = finder.Search_input;
         }
 
         private void command_list_KeyDown(object sender, KeyEventArgs e)
