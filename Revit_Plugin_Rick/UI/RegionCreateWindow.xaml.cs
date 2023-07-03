@@ -18,9 +18,9 @@ namespace Revit_Plugin_Rick.UI
     /// <summary>
     /// Interaction logic for RegionFillWindow.xaml
     /// </summary>
-    public partial class RegionFillWindow : Window
+    public partial class FilledRegionCreateWindow : Window
     {
-        public RegionFillWindow()
+        public FilledRegionCreateWindow()
         {
             InitializeComponent();
         }

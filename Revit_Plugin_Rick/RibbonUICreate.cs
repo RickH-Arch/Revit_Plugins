@@ -48,18 +48,23 @@ namespace Revit_Plugin_Rick
             //searchButton.LargeImage = new BitmapImage(new Uri(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\PNG\search.png"));
 
 
-            //--- region fill ---
+            //--- region fill create---
             panel = CreateRibbonPanel(application, "BIM效率工具", "fill");
             //button
             string assemblyPath = Assembly.GetExecutingAssembly().Location;
-            string regionFillClass = "Revit_Plugin_Rick.Cmd_RegionFill";
+            string regionFillClass = "Revit_Plugin_Rick.Cmd_FilledRegionGreate";
 
-            PushButtonData btnd_regionFill = new PushButtonData("区域填充", "区域填充", assemblyPath, regionFillClass);
+            PushButtonData btnd_regionFill = new PushButtonData("创建填充", "创建填充", assemblyPath, regionFillClass);
             PushButton btn_regionFill = panel.AddItem(btnd_regionFill) as PushButton;
             btn_regionFill.LargeImage = new BitmapImage(new Uri(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\Resources\PNG\区域.png"));
 
+            //--- region fill from element
+            string assemblyPath2 = Assembly.GetExecutingAssembly().Location;
+            string regionFillClass2 = "Revit_Plugin_Rick.Cmd_FilledRegionFromElement";
+            PushButtonData btnd_regionFillFromElem = new PushButtonData("元素填充", "元素填充", assemblyPath2, regionFillClass2);
+            PushButton btn_regionFillFromElem = panel.AddItem(btnd_regionFillFromElem) as PushButton;
 
-            
+
             return Result.Succeeded;
         }
 

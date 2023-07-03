@@ -17,6 +17,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 
 namespace Revit_Plugin_Rick
 {
@@ -40,7 +41,6 @@ namespace Revit_Plugin_Rick
                 }
                 return instance;
             }
-
         }
 
         private CommandFrequencyRecorder recorder = CommandFrequencyRecorder.Instance;
@@ -88,7 +88,6 @@ namespace Revit_Plugin_Rick
             set
             {
                 filtedCmdName = value;
-                //BindingCmdName = new ObservableCollection<string>(value);
             }
         }
 
@@ -125,7 +124,6 @@ namespace Revit_Plugin_Rick
             }
         }
 
-        //List<Bitmap> bitmaps = new List<Bitmap>();
         List<ImageSource> image_sources = new List<ImageSource>();
         List<string> image_names = new List<string>();
         List<RevitCommandId> image_commandId = new List<RevitCommandId>();
@@ -144,22 +142,16 @@ namespace Revit_Plugin_Rick
 
         public Result Execute(UIApplication uiapp)
         {
-            #region Get all commands
-            //get all commands
+            
+            
             this.uiapp = uiapp;
             doc = uiapp.ActiveUIDocument.Document;
             app = uiapp.Application;
-            
-            
 
-            if(cmdName.Count == 0)
-            //if(true)
+            #region Get all commands
+            //get all commands
+            if (cmdName.Count == 0)
             {
-                //cmdName.Clear();
-                //cmdId.Clear();
-                //image_commandId.Clear();
-                //image_names.Clear();
-                //image_sources.Clear();
                 var names = Enum.GetNames(typeof(PostableCommand)).ToList();
                 var values = new List<int>((IEnumerable<int>)Enum.GetValues(typeof(PostableCommand)));
                 for (int i = 0; i < values.Count(); i++)
@@ -335,7 +327,6 @@ namespace Revit_Plugin_Rick
             var commandId = RevitCommandId.LookupCommandId(cmd.Id);
             if(commandId != null)
             {
-                //bitmaps.Add(ImageSourceToBitmap(cmd.LargeImage));
                 image_sources.Add(cmd.LargeImage);
                 image_names.Add(cmd.AutomationName);
                 image_commandId.Add(commandId);
@@ -410,20 +401,6 @@ namespace Revit_Plugin_Rick
             recorder.AddCommandFreq(cmdN);
         }
 
-        private Bitmap ImageSourceToBitmap(ImageSource imageSource)
-        {
-            if(imageSource is BitmapSource bitmapSource)
-            {
-                Bitmap bitmap = new Bitmap(bitmapSource.PixelWidth, bitmapSource.PixelHeight, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
-                BitmapData data = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
-                bitmapSource.CopyPixels(System.Windows.Int32Rect.Empty, data.Scan0, data.Height * data.Stride, data.Stride);
-                bitmap.UnlockBits(data);
-
-                return bitmap;
-            }
-            return null;
-        }
-
         
         class StringSimilarityComparer : IComparer<string>
         {
@@ -487,8 +464,6 @@ namespace Revit_Plugin_Rick
         {
             public string Name{get;set ;}
             public RevitCommandId CommandId { get; set; }
-            //public Bitmap Bitmap { get; set; }
-            //public Image Image { get; set; }
             public ImageSource ImageSource { get; set; }
 
             public RevitCommandInfoWrap(RevitCommandId commandId)
@@ -509,21 +484,12 @@ namespace Revit_Plugin_Rick
                     }
                     if(ndx != -1)
                     {
-                        //this.Bitmap = CommandFinder.Instance.bitmaps[ndx];
                         this.ImageSource = Cmd_CommandFinder.Instance.image_sources[ndx];
                     }
                     else
                     {
-                        //Uri baseUri = new Uri( Assembly.GetExecutingAssembly().Location);
-                        //Uri targetUri = new Uri("C:\\Users\\ricks\\OneDrive\\_EVENTS_\\revit\\Revit_Plugin_Rick\\Revit_Plugin_Rick\\Resources\\Bitmaps\\empty.bmp");
-                        //Uri relativeUri = baseUri.MakeRelativeUri(targetUri);
-                        //string relativePath = Uri.UnescapeDataString(relativeUri.ToString());
-                        //this.Bitmap = new Bitmap(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\Resources\Bitmaps\empty.bmp");
-                        this.ImageSource = new BitmapImage(new Uri(@"../../../Resources/Bitmaps/empty.bmp",UriKind.Relative));
-                        //ImageSource ImageSource2 = new BitmapImage(new Uri(@"C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\Resources\Bitmaps\empty.bmp"));
+                        this.ImageSource = new BitmapImage(new Uri(Path.GetDirectoryName(typeof(Cmd_CommandFinder).Assembly.Location)+"\\Resources\\Bitmaps\\empty.bmp"));
                     }
-                    //Image = Bitmap;
-                    
                 }
             }
         }
