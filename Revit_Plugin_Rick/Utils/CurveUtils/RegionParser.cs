@@ -25,6 +25,7 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
     {
         List<CurveGroup> curveGroups = new List<CurveGroup>();
         List<MetaCurve> floatCurves = new List<MetaCurve>();
+        List<CurveGroup> perfectGroups = new List<CurveGroup>();
         public const double CONNECT_THRESHOLD = 1.0e-6;
         public bool AddCurve(Curve curve)
         {
@@ -85,6 +86,31 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
 
 
         /// <summary>
+        /// make groups close and clockwise, then add them to perfectGroup list
+        /// </summary>
+        public void PerfectGroup()
+        {
+            foreach(CurveGroup g in curveGroups)
+            {
+                if (g.Curves.Count <= 2) continue;
+                g.MakeClose();
+                g.ClockWise();
+                perfectGroups.Add(g);
+            }
+        }
+
+
+        public IEnumerable<Curve[]> GetClosedCurves()
+        {
+            foreach(CurveGroup g in perfectGroups)
+            {
+                yield return g.GetCurves();
+            }
+            yield break;
+        }
+
+
+        /// <summary>
         /// this funcyion make sure curveGroups has no two connected groups that is seperate in the list
         /// </summary>
         /// <param name="cg"></param>
@@ -111,15 +137,110 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         /// </summary>
         class CurveGroup
         {
-            public List<MetaCurve> Curves { get; private set; }
-            public CurveGroup(List<MetaCurve> curves)
+            private List<MetaCurve> curves;
+            public List<MetaCurve> Curves
             {
-                foreach(var c in curves)
+                get
                 {
-                    Curves.Add(c);
+                    return curves;
                 }
             }
-            public CurveGroup() { }
+            public CurveGroup(List<MetaCurve> in_curves):this()
+            {
+                int count = in_curves.Count;
+                int step = 0;
+                bool findHead = false;
+                while (count > 0)
+                {
+                    if(in_curves[step % in_curves.Count].HeadCurve == null)
+                    {
+                        findHead = true;
+                    }
+                    if (findHead)
+                    {
+                        curves.Add(in_curves[step % in_curves.Count]);
+                        count--;
+                    }
+                    if (step > in_curves.Count && findHead == false) break;
+                    step++;
+                }
+                
+            }
+            public CurveGroup() {
+                curves = new List<MetaCurve>();
+            }
+
+            public void MakeClose()
+            {
+                if (!IsClosed())
+                {
+                    XYZ head = GetGroupEndPoint(0);
+                    XYZ tail = GetGroupEndPoint(1);
+                    Line line = Line.CreateBound(head, tail);
+                    MetaCurve newC = new MetaCurve(line);
+                    newC.HeadCurve = curves[curves.Count - 1];
+                    curves.Add(newC);
+                }
+            }
+            
+
+            public List<Curve> GetClosedCurves()
+            {
+                List<Curve> cs = new List<Curve>();
+                if (curves.Count <= 2) return null;
+                foreach (MetaCurve mc in curves)
+                {
+                    cs.Add(mc.Curve);
+                }
+                if (!IsClosed())
+                {
+                    //add a new curve to tail, make it close
+                    XYZ head = GetGroupEndPoint(0);
+                    XYZ tail = GetGroupEndPoint(1);
+                    Line line = Line.CreateBound(head, tail);
+                    cs.Add(line);
+                }
+                return cs;
+            }
+
+            private bool IsClosed()
+            {
+                return GetGroupEndPoint(0).DistanceTo(GetGroupEndPoint(1)) < CONNECT_THRESHOLD;
+            }
+
+            private bool IsClockWise()
+            {
+                double sum = 0;
+                for(int i = 0; i < curves.Count; i++)
+                {
+                    double x0 = curves[i].Curve.GetEndPoint(0).X;
+                    double x1 = curves[i].Curve.GetEndPoint(1).X;
+
+                    double y0 = curves[i].Curve.GetEndPoint(0).Y;
+                    double y1 = curves[i].Curve.GetEndPoint(1).Y;
+
+                    sum += (x1 - x0) * (y1 + y0);
+                }
+                return sum > 0;
+            }
+
+            public void ClockWise()
+            {
+                if (!IsClockWise())
+                {
+                    List<MetaCurve> newCs = new List<MetaCurve>();
+                    for(int i = 0; i < curves.Count; i++)
+                    {
+                        MetaCurve c = new MetaCurve(curves[i].Curve.Reverse());
+                        newCs.Add(c);
+                        if (newCs.Count > 1)
+                        {
+                            newCs[0].TailCurve = newCs[1];
+                        }
+                    }
+                    curves = newCs;
+                }
+            }
 
             public ConnectResult GroupConnectCurve(MetaCurve mc_in,out MetaCurve connectedCurve)
             {
@@ -173,6 +294,16 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                     return ConnectResult.Success;
                 }
                 return ConnectResult.Fail;
+            }
+
+            public Curve[] GetCurves()
+            {
+                List<Curve> cs = new List<Curve>();
+                for(int i= 0; i < curves.Count; i++)
+                {
+                    cs.Add(curves[i].Curve);
+                }
+                return cs.ToArray();
             }
 
             /// <summary>

@@ -27,7 +27,8 @@ namespace Revit_Plugin_Rick
         Options opt;
         View clipView;
 
-        public List<RegionParser> regionParsers = new List<RegionParser>();
+        //public List<RegionParser> regionParsers = new List<RegionParser>();
+        RegionManager regionMgr = new RegionManager();
 
         /// <summary>
         /// Maximum distance for line to be 
@@ -86,33 +87,38 @@ namespace Revit_Plugin_Rick
 
             selectedRefs = RevitDoc.Instance.UIdoc.Selection.PickObjects(ObjectType.Element, new SectionElementSelecion(), "选择要填充的元素").ToList();
 
-            
-            
+
+
             
             foreach (var re in selectedRefs)
             {
-                RegionParser parser = new RegionParser();
                 List<Curve> curves = new List<Curve>();
                 Element elem = RevitDoc.Instance.Doc.GetElement(re);
                 GeometryElement geo = elem.get_Geometry(opt);
                 GetCurvesInPlane(curves,plane, geo);
-                foreach(var c in curves)
-                {
-                    parser.AddCurve(c);
-                }
+                regionMgr.ParseNewCurveList(curves);
             }
+
+            regionMgr.PerfectParsers();
                 
             
-            /*using (Transaction tx = new Transaction(RevitDoc.Instance.Doc))
+            using (Transaction tx = new Transaction(RevitDoc.Instance.Doc))
             {
                 tx.Start("创建截面Curve");
 
                 SketchPlane sketchP = SketchPlane.Create(
                   RevitDoc.Instance.Doc, plane);
 
-                foreach (Curve c in curves)
+                
+                foreach(var parser in regionMgr.Parsers)
                 {
-                    RevitDoc.Instance.Doc.Create.NewModelCurve(c, sketchP);
+                    foreach(Curve[] cs in parser.GetClosedCurves())
+                    {
+                        foreach(Curve c in cs)
+                        {
+                            RevitDoc.Instance.Doc.Create.NewModelCurve(c, sketchP);
+                        }
+                    }
                 }
 
                 if(clipView != null)
@@ -121,7 +127,7 @@ namespace Revit_Plugin_Rick
                 }
 
                 tx.Commit();
-            }*/
+            }
             
 
             return Result.Succeeded;
