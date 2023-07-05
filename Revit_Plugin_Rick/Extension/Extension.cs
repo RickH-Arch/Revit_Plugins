@@ -37,6 +37,7 @@ namespace Revit_Plugin_Rick.Extension
             if (curve is Line)
             {
                 Line l = curve as Line;
+                //Line newL = Line.CreateBound(l.GetEndPoint(1), l.GetEndPoint(0));
                 return l.CreateReversed();
             }
             if (curve is Arc)

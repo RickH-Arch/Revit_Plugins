@@ -85,11 +85,14 @@ namespace Revit_Plugin_Rick
 
 
 
-            selectedRefs = RevitDoc.Instance.UIdoc.Selection.PickObjects(ObjectType.Element, new SectionElementSelecion(), "选择要填充的元素").ToList();
+            selectedRefs = RevitDoc.Instance.UIdoc.Selection.PickObjects(ObjectType.Element, new SectionElementSelecion(), "请选择要填充的元素").ToList();
+
+            var fillTypes = new FilteredElementCollector(RevitDoc.Instance.Doc)
+                .OfClass(typeof(FilledRegionType));
+                
+            var fillType = fillTypes.FirstOrDefault(x => x.Name == "实体填充 - 黑色");
 
 
-
-            
             foreach (var re in selectedRefs)
             {
                 List<Curve> curves = new List<Curve>();
@@ -109,16 +112,22 @@ namespace Revit_Plugin_Rick
                 SketchPlane sketchP = SketchPlane.Create(
                   RevitDoc.Instance.Doc, plane);
 
-                
                 foreach(var parser in regionMgr.Parsers)
                 {
-                    foreach(Curve[] cs in parser.GetClosedCurves())
+                    IList<CurveLoop> bounds = new List<CurveLoop>();
+                    foreach (Curve[] cs in parser.GetClosedCurves())
                     {
-                        foreach(Curve c in cs)
-                        {
-                            RevitDoc.Instance.Doc.Create.NewModelCurve(c, sketchP);
-                        }
+                        //foreach(Curve c in cs)
+                        //{
+                            //RevitDoc.Instance.Doc.Create.NewModelCurve(c, sketchP);
+                            
+                        //}
+                        
+                        CurveLoop cLoop = CurveLoop.Create(cs);
+                        bounds.Add(cLoop);
+                        
                     }
+                    FilledRegion filledRegion = FilledRegion.Create(RevitDoc.Instance.Doc, fillType.Id, activeView.Id, bounds);
                 }
 
                 if(clipView != null)
@@ -190,7 +199,7 @@ namespace Revit_Plugin_Rick
                         foreach (Edge edge in edges)
                         {
                             Curve curve = edge.AsCurve();
-                            Debug.Assert(curve is Line,"we currently only support lines here");
+                            Debug.Assert(curve is Line,"目前仅支持直线段填充");
                             
                             if (IsLineInPlane(curve as Line, plane))
                             {

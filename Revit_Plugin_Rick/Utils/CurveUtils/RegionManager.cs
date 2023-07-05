@@ -13,12 +13,17 @@ using Revit_Plugin_Rick.UI;
 using Autodesk.Revit.UI.Selection;
 using System.Diagnostics;
 using System.Collections;
+using ClipperLib;
+using Path = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using Paths = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
 
 namespace Revit_Plugin_Rick.Utils.CurveUtils
 {
     public class RegionManager
     {
-        private List<RegionParser> parsers;
+        
+
+        private List<RegionParser> parsers = new List<RegionParser>();
         public List<RegionParser> Parsers
         {
             get
@@ -61,8 +66,42 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         {
             foreach(var p in parsers)
             {
+                p.ExpandToSnapFloatCurvesAndGroups();
                 p.PerfectGroup();
             }
         }
+
+        public IEnumerable<Curve[]> GetClosedCurves()
+        {
+            foreach(var p in parsers)
+            {
+                foreach(Curve[] crs in p.GetClosedCurves())
+                {
+                    yield return crs;
+                }
+            }
+            yield break;
+        }
+
+
+        /// <summary>
+        /// points in revit is 3D points, must give them a reference plane to reduce dimention
+        /// </summary>
+        /// <param name="plane"></param>
+        /// <returns></returns>
+        /*public Curve[] GetUnionRegionCurve(Plane refPlane)
+        {
+
+            Paths subjs = new Paths(3);
+
+            
+        }*/
+
+        class Path
+        {
+            public List<IntPoint> points = new List<IntPoint>();
+        }
+
+
     }
 }
