@@ -86,10 +86,10 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         }
 
         /// <summary>
-        /// each group and floatCurve will expand to snap other group and floatCurve
+        /// each group and floatCurve will extend to snap other group and floatCurve
         /// If has intersection points to other groups or curves endpoints, then make join
         /// </summary>
-        public void ExpandToSnapFloatCurvesAndGroups()
+        public void ExtendToSnapFloatCurvesAndGroups()
         {
             
             //group expand
@@ -133,6 +133,58 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
 
             
             
+        }
+
+
+        /// <summary>
+        /// If parser now has no curveGroups, means all curves are separate.
+        /// snap all curves
+        /// </summary>
+        public void RearrangeFloatCurves()
+        {
+            if (curveGroups.Count > 0) return;
+            List<MetaCurve> newLoop = new List<MetaCurve>();
+            newLoop.Add(floatCurves[0]);
+            floatCurves.RemoveAt(0);
+            while (floatCurves.Count > 0)
+            {
+                
+                    XYZ tail = newLoop[newLoop.Count - 1].Curve.GetEndPoint(1);
+                    bool headConnect = false;
+                    double dis = double.MaxValue;
+                    int ind = -1;
+                    for(int i = 0; i < floatCurves.Count; i++)
+                    {
+                        Curve c = floatCurves[i].Curve;
+                        double hd = c.GetEndPoint(0).DistanceTo(tail);
+                        if (hd< dis)
+                        {
+                            dis = hd;
+                            ind = i;
+                            headConnect = true;
+                        }
+                        double td = c.GetEndPoint(1).DistanceTo(tail);
+                        if (td < dis)
+                        {
+                            dis = td;
+                            ind = i;
+                            headConnect = false;
+                        }
+                    }
+                    Curve cNow = floatCurves[ind].Curve;
+                    if (!headConnect)
+                    {
+                        floatCurves[ind].Curve = floatCurves[ind].Curve.Reverse();
+                    }
+                    MetaCurve newMc = new MetaCurve(Line.CreateBound(tail, cNow.GetEndPoint(0)));
+                    newLoop[newLoop.Count - 1].TailCurve = newMc;
+                    newLoop.Add(newMc);
+                    newLoop[newLoop.Count - 1].TailCurve = floatCurves[ind];
+                    newLoop.Add(floatCurves[ind]);
+                    floatCurves.RemoveAt(ind);
+            }
+            CurveGroup group = new CurveGroup(newLoop);
+            curveGroups.Add(group);
         }
 
         private void AddSnapLine(int ind,MetaCurve snapCurve)

@@ -22,7 +22,7 @@ namespace Revit_Plugin_Rick
     [Transaction(TransactionMode.Manual)]
     class Cmd_FilledRegionFromElement : RevitCommand
     {
-        List<Reference> selectedRefs = new List<Reference>();
+        //List<Reference> selectedRefs = new List<Reference>();
         Plane plane;
         Options opt;
         View clipView;
@@ -86,18 +86,52 @@ namespace Revit_Plugin_Rick
             }
 
             /////////////////////////////////////////////////////////////////////////////
+            //select item
+
+            List<BuiltInCategory> categories = new List<BuiltInCategory>() {
+                BuiltInCategory.OST_Walls,
+                BuiltInCategory.OST_Roofs,
+                BuiltInCategory.OST_Columns,
+                BuiltInCategory.OST_Stairs,
+                BuiltInCategory.OST_Floors,
+            };
+
+            ICollection<ElementId> selectedElemIds = RevitDoc.Instance.UIdoc.Selection.GetElementIds();
+            List<ElementId> elemIds = new List<ElementId>();
+            foreach(var id in selectedElemIds)
+            {
+                Element elem = RevitDoc.Instance.Doc.GetElement(id);
+                foreach(var ca in categories)
+                {
+                    if(elem.Category.Id.IntegerValue == (int)ca)
+                    {
+                        elemIds.Add(id);
+                    }
+                }
+            }
+            if(elemIds.Count == 0)
+            {
+                var selectedRefs = RevitDoc.Instance.UIdoc.Selection.PickObjects(ObjectType.Element, new SectionElementSelecion(), "请选择要填充的元素").ToList();
+                if (selectedRefs.Count == 0) return Result.Failed;
+                foreach(var eRef in selectedRefs)
+                {
+                    var id = RevitDoc.Instance.Doc.GetElement(eRef).Id;
+                    elemIds.Add(id);
+                }
+            }
+
+            
 
 
 
-            selectedRefs = RevitDoc.Instance.UIdoc.Selection.PickObjects(ObjectType.Element, new SectionElementSelecion(), "请选择要填充的元素").ToList();
-
+            /////////////////////////////////////////////////////////////////////////////
             var fillTypes = new FilteredElementCollector(RevitDoc.Instance.Doc)
                 .OfClass(typeof(FilledRegionType));
                 
             var fillType = fillTypes.FirstOrDefault(x => x.Name == "实体填充 - 黑色");
 
 
-            foreach (var re in selectedRefs)
+            foreach (var re in elemIds)
             {
                 List<Curve> curves = new List<Curve>();
                 Element elem = RevitDoc.Instance.Doc.GetElement(re);

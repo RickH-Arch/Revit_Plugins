@@ -72,7 +72,8 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         {
             foreach(var p in parsers)
             {
-                p.ExpandToSnapFloatCurvesAndGroups();
+                p.ExtendToSnapFloatCurvesAndGroups();
+                p.RearrangeFloatCurves();
                 p.PerfectGroup();
             }
             perfected = true;
@@ -136,7 +137,7 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                     {
                         if (solution.Count == 2) continue;
                         ps[i]= solution[0];
-                        i--;
+                        //i--;
                         ps.RemoveAt(j);
                     }
                 }
