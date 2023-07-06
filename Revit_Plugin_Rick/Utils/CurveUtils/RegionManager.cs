@@ -21,7 +21,13 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
 {
     public class RegionManager
     {
-        
+        CoordSpaceConverter coordConverter;
+        bool perfected = false;
+        float scaleFac = 1000000;
+        public RegionManager()
+        {
+            coordConverter = new CoordSpaceConverter(RevitDoc.Instance.UIdoc);
+        }
 
         private List<RegionParser> parsers = new List<RegionParser>();
         public List<RegionParser> Parsers
@@ -69,6 +75,7 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                 p.ExpandToSnapFloatCurvesAndGroups();
                 p.PerfectGroup();
             }
+            perfected = true;
         }
 
         public IEnumerable<Curve[]> GetClosedCurves()
@@ -85,22 +92,77 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
 
 
         /// <summary>
-        /// points in revit is 3D points, must give them a reference plane to reduce dimention
+        /// Return unioned region boundary, 
+        /// WARNING!: Returned boundary unioned in screen space, not the same with original curves
         /// </summary>
         /// <param name="plane"></param>
         /// <returns></returns>
-        /*public Curve[] GetUnionRegionCurve(Plane refPlane)
+        public List<Curve[]> GetUnionRegionCurve()
         {
-
-            Paths subjs = new Paths(3);
-
+            if (!perfected) return null;
+            Paths ps = new Paths();
             
-        }*/
+            //get all closed path
+            foreach(var cs in GetClosedCurves())
+            {
+                Path path = new Path();
+                foreach (var c in cs)
+                {
+                    XYZ screen_head = coordConverter.Model2Screen(c.GetEndPoint(0));
+                    XYZ screen_tail = coordConverter.Model2Screen(c.GetEndPoint(1));
+                    path.Add(new IntPoint(screen_head.X*scaleFac, screen_head.Y*scaleFac));
+                    
+                }
+                //csList_screen.Add(cs);
+                ps.Add(path);
+            }
 
-        class Path
-        {
-            public List<IntPoint> points = new List<IntPoint>();
+            //union
+            for(int i = 0; i < ps.Count; i++)
+            {
+                //Paths subj = new Paths(1);
+                //subj.Add(ps[i].points);
+                for (int j = i+1; j < ps.Count; j++)
+                {
+                    //Paths clip = new Paths(1);
+                    //clip.Add(ps[j].points);
+
+                    Clipper c = new Clipper();
+                    
+                    c.AddPath(ps[i], PolyType.ptSubject, true);
+                    c.AddPath(ps[j], PolyType.ptClip, true);
+                    Paths solution = new Paths();
+                    if (c.Execute(ClipType.ctUnion, solution))
+                    {
+                        if (solution.Count == 2) continue;
+                        ps[i]= solution[0];
+                        i--;
+                        ps.RemoveAt(j);
+                    }
+                }
+            }
+
+            //back to revit curve
+            List<Curve[]> results = new List<Curve[]>();
+            foreach(var path in ps)
+            {
+                List<Curve> curves = new List<Curve>();
+                for(int i = 0; i < path.Count; i++)
+                {
+                    XYZ screenHead = new XYZ(path[i].X/scaleFac, path[i].Y/scaleFac, 0);
+                    XYZ screenTail = new XYZ(path[(i + 1) % path.Count].X/scaleFac, path[(i + 1) % path.Count].Y/scaleFac, 0);
+                    XYZ modelHead = coordConverter.Screen2Model(screenHead);
+                    XYZ modelTail = coordConverter.Screen2Model(screenTail);
+                    Line l = Line.CreateBound(modelHead, modelTail);
+                    curves.Add(l);
+                }
+                results.Add(curves.ToArray());
+            }
+
+            return results;
         }
+
+        
 
 
     }

@@ -32,3 +32,4 @@ C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\obj\x
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\obj\x64\Debug\UI\RegionCreateFloatWIndow.baml
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\obj\x64\Debug\UI\RegionCreateWindow.baml
 C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\obj\x64\Debug\Revit_Plugin_Rick.csproj.AssemblyReference.cache
+C:\Users\ricks\OneDrive\_EVENTS_\revit\Revit_Plugin_Rick\Revit_Plugin_Rick\bin\x64\Debug\clipper_library.dll

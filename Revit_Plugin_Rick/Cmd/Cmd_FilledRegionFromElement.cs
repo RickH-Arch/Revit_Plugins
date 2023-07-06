@@ -26,10 +26,11 @@ namespace Revit_Plugin_Rick
         Plane plane;
         Options opt;
         View clipView;
+        
 
         //public List<RegionParser> regionParsers = new List<RegionParser>();
         RegionManager regionMgr = new RegionManager();
-
+        
         /// <summary>
         /// Maximum distance for line to be 
         /// considered to lie in plane
@@ -42,6 +43,9 @@ namespace Revit_Plugin_Rick
         {
             //judge if active view is right
             View activeView = RevitDoc.Instance.UIdoc.ActiveView;
+            View3D viewNow = activeView as View3D;
+            
+
             if(activeView.ViewType != ViewType.Section 
                 && activeView.ViewType != ViewType.FloorPlan
                 && activeView.ViewType != ViewType.CeilingPlan
@@ -112,25 +116,36 @@ namespace Revit_Plugin_Rick
                 SketchPlane sketchP = SketchPlane.Create(
                   RevitDoc.Instance.Doc, plane);
 
-                foreach(var parser in regionMgr.Parsers)
+                IList<CurveLoop> bounds = new List<CurveLoop>();
+                foreach (Curve[] cs in regionMgr.GetClosedCurves())
                 {
-                    IList<CurveLoop> bounds = new List<CurveLoop>();
-                    foreach (Curve[] cs in parser.GetClosedCurves())
+                    /*ModelCurveArray mca = new ModelCurveArray();
+                    foreach(Curve c in cs)
                     {
-                        //foreach(Curve c in cs)
-                        //{
-                            //RevitDoc.Instance.Doc.Create.NewModelCurve(c, sketchP);
-                            
-                        //}
-                        
-                        CurveLoop cLoop = CurveLoop.Create(cs);
-                        bounds.Add(cLoop);
-                        
+                        var mc = RevitDoc.Instance.Doc.Create.NewModelCurve(c, sketchP);
+                        mca.Append(mc);
                     }
-                    FilledRegion filledRegion = FilledRegion.Create(RevitDoc.Instance.Doc, fillType.Id, activeView.Id, bounds);
+                    DetailCurveArray dca = RevitDoc.Instance.Doc.ConvertModelToDetailCurves(activeView,mca);
+                    foreach(var dc in dca)
+                    {
+                        var cc = dc as DetailCurve;
+                        XYZ start = cc.GeometryCurve.GetEndPoint(0);
+                        XYZ end = cc.GeometryCurve.GetEndPoint(1);
+                    }*/
+                    //CurveLoop cLoop = CurveLoop.Create(cs);
+                    //bounds.Add(cLoop);
                 }
 
-                if(clipView != null)
+                var curveLists = regionMgr.GetUnionRegionCurve();
+                foreach(var cs in curveLists)
+                {
+                    CurveLoop cLoop = CurveLoop.Create(cs);
+                    bounds.Add(cLoop);
+                }
+
+                FilledRegion filledRegion = FilledRegion.Create(RevitDoc.Instance.Doc, fillType.Id, activeView.Id, bounds);
+
+                if (clipView != null)
                 {
                     RevitDoc.Instance.Doc.Delete(clipView.Id);
                 }

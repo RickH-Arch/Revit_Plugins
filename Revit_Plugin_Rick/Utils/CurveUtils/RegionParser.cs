@@ -198,7 +198,8 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                     points.Add(cTail);
                 }
             }
-            if (points.Count > 0) return DetectedPointType.FloatCurvePoint;
+            //if (points.Count > 0) return DetectedPointType.FloatCurvePoint;
+            int count = points.Count;
             
             for(int i = 0; i < curveGroups.Count; i++)
             {
@@ -215,7 +216,10 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                     points.Add(gTail);
                 }
             }
-            if (points.Count > 0) return DetectedPointType.GroupPoint;
+            if (points.Count > count && count == 0) return DetectedPointType.GroupPoint;
+            else if (points.Count == count && count != 0) return DetectedPointType.FloatCurvePoint;
+            else if (points.Count > count && count != 0) return DetectedPointType.Both;
+            
             return DetectedPointType.None;
             
         }

@@ -60,7 +60,7 @@
     </Reference>
     <Reference Include="clipper_library">
       <HintPath>..\..\..\⭐Resources⭐\C#dll\clipper_library.dll</HintPath>
-      <Private>False</Private>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -90,6 +90,7 @@
   <ItemGroup>
     <Compile Include="Cmd\Cmd_CommandFinder.cs" />
     <Compile Include="Cmd\Cmd_FilledRegionFromElement.cs" />
+    <Compile Include="Cmd\test.cs" />
     <Compile Include="UI\RegionFillFloatWIndow.cs">
       <DependentUpon>RegionCreateFloatWIndow.xaml</DependentUpon>
     </Compile>
@@ -104,6 +105,7 @@
     <Compile Include="UI\SearchCommandWindow.xaml.cs">
       <DependentUpon>SearchCommandWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Utils\CoordSpaceConverter.cs" />
     <Compile Include="Utils\CurveUtils\RegionManager.cs" />
     <Compile Include="Utils\CurveUtils\RegionParser.cs" />
     <Compile Include="Utils\MouseHook.cs" />
