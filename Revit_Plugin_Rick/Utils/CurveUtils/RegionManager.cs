@@ -66,7 +66,7 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
 
 
         /// <summary>
-        /// make curves close and clockwise in all region parsers
+        /// Rearrange curves,make curves close and clockwise in all region parsers,this function must be called after all curve parsing has done
         /// </summary>
         public void PerfectParsers()
         {

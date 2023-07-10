@@ -24,7 +24,7 @@ namespace Revit_Plugin_Rick.Extension
             RevitDoc.Instance.UIapp = commandData.Application;
             RevitDoc.Instance.App = commandData.Application.Application;
             RevitDoc.Instance.Doc = commandData.Application.ActiveUIDocument.Document;
-            RevitDoc.Instance.Task = new RevitTask();
+            //RevitDoc.Instance.Task = new RevitTask();
             return RevitDoc.Instance.UIdoc;
         }
 
