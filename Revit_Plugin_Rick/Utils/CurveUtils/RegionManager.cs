@@ -21,6 +21,9 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
 {
     public class RegionManager
     {
+        public delegate void ClosingEvent(List<Curve[]> cs);
+        public ClosingEvent closingEvent;
+
         CoordSpaceConverter coordConverter;
         bool perfected = false;
         float scaleFac = 1000000;
@@ -53,7 +56,7 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         }
 
         /// <summary>
-        /// this fun will use latest regionParser to parse input curve list
+        /// this func will use latest regionParser to parse input curve list
         /// </summary>
         /// <param name="curves"></param>
         public void ParseCurveList(List<Curve> curves)
@@ -61,6 +64,43 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
             foreach(Curve c in curves)
             {
                 parsers[parsers.Count - 1].AddCurve(c);
+            }
+        }
+
+        /// <summary>
+        /// always use same parser to parse add region curve
+        /// </summary>
+        /// <param name="curve"></param>
+        public void ParseAddRegionCurve(Curve curve)
+        {
+            if (parsers.Count == 0)
+            {
+                var parser = new RegionParser();
+                RegionParser.closing = new RegionParser.Closing(DetectedClosing);
+                parsers.Add(parser);
+                
+            }
+            
+            parsers[0].AddCurve(curve);
+        }
+
+        public void ParseDeleteRegionCurve(Curve curve)
+        {
+            if(parsers.Count < 2)
+            {
+                for(int i = 0; i < 2 - parsers.Count; i++)
+                {
+                    parsers.Add(new RegionParser());
+                }
+            }
+        }
+
+        public void DetectedClosing()
+        {
+            var curvesLists = GetUnionRegionCurve(0);
+            if(closingEvent != null)
+            {
+                closingEvent(curvesLists);
             }
         }
 
@@ -79,17 +119,29 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
             perfected = true;
         }
 
-        public IEnumerable<Curve[]> GetClosedCurves()
+        public IEnumerable<Curve[]> GetClosedCurves(int ind = -1)
         {
-            foreach(var p in parsers)
+            if(ind != -1)
             {
-                foreach(Curve[] crs in p.GetClosedCurves())
+                foreach(Curve[] crs in parsers[ind].GetClosedCurves())
                 {
                     yield return crs;
                 }
             }
+            else
+            {
+                foreach(var p in parsers)
+                {
+                    foreach(Curve[] crs in p.GetClosedCurves())
+                    {
+                        yield return crs;
+                    }
+                }
+            }
             yield break;
         }
+
+        
 
 
         /// <summary>
@@ -98,24 +150,43 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         /// </summary>
         /// <param name="plane"></param>
         /// <returns></returns>
-        public List<Curve[]> GetUnionRegionCurve()
+        public List<Curve[]> GetUnionRegionCurve(int ind = -1)
         {
-            if (!perfected) return null;
+            if (!perfected && ind == -1) return null;
             Paths ps = new Paths();
             
             //get all closed path
-            foreach(var cs in GetClosedCurves())
+            if(ind != -1)
             {
-                Path path = new Path();
-                foreach (var c in cs)
+                foreach(var cs in GetClosedCurves(ind))
                 {
-                    XYZ screen_head = coordConverter.Model2Screen(c.GetEndPoint(0));
-                    XYZ screen_tail = coordConverter.Model2Screen(c.GetEndPoint(1));
-                    path.Add(new IntPoint(screen_head.X*scaleFac, screen_head.Y*scaleFac));
-                    
+                    Path path = new Path();
+                    foreach (var c in cs)
+                    {
+                        XYZ screen_head = coordConverter.Model2Screen(c.GetEndPoint(0));
+                        XYZ screen_tail = coordConverter.Model2Screen(c.GetEndPoint(1));
+                        path.Add(new IntPoint(screen_head.X * scaleFac, screen_head.Y * scaleFac));
+
+                    }
+                    //csList_screen.Add(cs);
+                    ps.Add(path);
                 }
-                //csList_screen.Add(cs);
-                ps.Add(path);
+            }
+            else
+            {
+                foreach(var cs in GetClosedCurves())
+                {
+                    Path path = new Path();
+                    foreach (var c in cs)
+                    {
+                        XYZ screen_head = coordConverter.Model2Screen(c.GetEndPoint(0));
+                        XYZ screen_tail = coordConverter.Model2Screen(c.GetEndPoint(1));
+                        path.Add(new IntPoint(screen_head.X*scaleFac, screen_head.Y*scaleFac));
+                    
+                    }
+                    //csList_screen.Add(cs);
+                    ps.Add(path);
+                }
             }
 
             //union

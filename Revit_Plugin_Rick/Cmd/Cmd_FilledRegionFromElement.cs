@@ -166,8 +166,6 @@ namespace Revit_Plugin_Rick
                         XYZ start = cc.GeometryCurve.GetEndPoint(0);
                         XYZ end = cc.GeometryCurve.GetEndPoint(1);
                     }*/
-                    //CurveLoop cLoop = CurveLoop.Create(cs);
-                    //bounds.Add(cLoop);
                 }
 
                 var curveLists = regionMgr.GetUnionRegionCurve();

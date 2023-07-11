@@ -23,10 +23,16 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
     /// </summary>
     public class RegionParser
     {
+        public delegate void Closing();
+        public static Closing closing = null;
+
+
         List<CurveGroup> curveGroups = new List<CurveGroup>();
         List<MetaCurve> floatCurves = new List<MetaCurve>();
         List<CurveGroup> perfectGroups = new List<CurveGroup>();
+        
         public const double CONNECT_THRESHOLD = 1.0e-6;
+
         public bool AddCurve(Curve curve)
         {
             MetaCurve newMc = new MetaCurve(curve);
@@ -73,8 +79,12 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                 MetaCurve connectedCurve;
                 if(g.GroupConnectCurve(newMc,out connectedCurve) == ConnectResult.Success)
                 {
-                    curveGroups.RemoveAt(curveGroups.IndexOf(g));
-                    AddToCurveGroups(g);
+                    if(curveGroups.IndexOf(g) > 0)
+                    {
+                        curveGroups.RemoveAt(curveGroups.IndexOf(g));
+                        AddToCurveGroups(g);
+                    }
+                    
                     //SnoopCurveGroup(curveGroups);
                     return true;
                 }
@@ -84,6 +94,8 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
             return true;
 
         }
+
+        
 
         /// <summary>
         /// each group and floatCurve will extend to snap other group and floatCurve
@@ -117,8 +129,8 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                     if (headExpandSnap)
                     {
                         headExpandSnap = GetSnapLine(head, headDirection, out headSnapLine);
-                        if(headExpandSnap)
-                            AddSnapLine(i, new MetaCurve(headSnapLine));
+                        if (headExpandSnap)
+                            AddSnapLine(i, new MetaCurve(headSnapLine));  
                     }
                     Line tailSnapLine;
                     if (tailExpandSnap)
@@ -137,8 +149,8 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
 
 
         /// <summary>
-        /// If parser now has no curveGroups, means all curves are separate.
-        /// snap all curves
+        /// If parser now has no curveGroups, means all curves are separate.snap all curves.
+        /// else If parser now has float curve extend 
         /// </summary>
         public void RearrangeFloatCurves()
         {
@@ -149,39 +161,39 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
             while (floatCurves.Count > 0)
             {
                 
-                    XYZ tail = newLoop[newLoop.Count - 1].Curve.GetEndPoint(1);
-                    bool headConnect = false;
-                    double dis = double.MaxValue;
-                    int ind = -1;
-                    for(int i = 0; i < floatCurves.Count; i++)
+                XYZ tail = newLoop[newLoop.Count - 1].Curve.GetEndPoint(1);
+                bool headConnect = false;
+                double dis = double.MaxValue;
+                int ind = -1;
+                for(int i = 0; i < floatCurves.Count; i++)
+                {
+                    Curve c = floatCurves[i].Curve;
+                    double hd = c.GetEndPoint(0).DistanceTo(tail);
+                    if (hd< dis)
                     {
-                        Curve c = floatCurves[i].Curve;
-                        double hd = c.GetEndPoint(0).DistanceTo(tail);
-                        if (hd< dis)
-                        {
-                            dis = hd;
-                            ind = i;
-                            headConnect = true;
-                        }
-                        double td = c.GetEndPoint(1).DistanceTo(tail);
-                        if (td < dis)
-                        {
-                            dis = td;
-                            ind = i;
-                            headConnect = false;
-                        }
+                        dis = hd;
+                        ind = i;
+                        headConnect = true;
                     }
-                    Curve cNow = floatCurves[ind].Curve;
-                    if (!headConnect)
+                    double td = c.GetEndPoint(1).DistanceTo(tail);
+                    if (td < dis)
                     {
-                        floatCurves[ind].Curve = floatCurves[ind].Curve.Reverse();
+                        dis = td;
+                        ind = i;
+                        headConnect = false;
                     }
-                    MetaCurve newMc = new MetaCurve(Line.CreateBound(tail, cNow.GetEndPoint(0)));
-                    newLoop[newLoop.Count - 1].TailCurve = newMc;
-                    newLoop.Add(newMc);
-                    newLoop[newLoop.Count - 1].TailCurve = floatCurves[ind];
-                    newLoop.Add(floatCurves[ind]);
-                    floatCurves.RemoveAt(ind);
+                }
+                Curve cNow = floatCurves[ind].Curve;
+                if (!headConnect)
+                {
+                    floatCurves[ind].Curve = floatCurves[ind].Curve.Reverse();
+                }
+                MetaCurve newMc = new MetaCurve(Line.CreateBound(tail, cNow.GetEndPoint(0)));
+                newLoop[newLoop.Count - 1].TailCurve = newMc;
+                newLoop.Add(newMc);
+                newLoop[newLoop.Count - 1].TailCurve = floatCurves[ind];
+                newLoop.Add(floatCurves[ind]);
+                floatCurves.RemoveAt(ind);
             }
             CurveGroup group = new CurveGroup(newLoop);
             curveGroups.Add(group);
@@ -191,17 +203,17 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         {
             CurveGroup groupNow = curveGroups[ind];
             MetaCurve mc;
-            groupNow.GroupConnectCurve(snapCurve, out mc);
-            curveGroups.RemoveAt(ind);
-            AddToCurveGroups(groupNow, ind);
-            for (int j = 0; j < floatCurves.Count; j++)
-            {
-                MetaCurve cc;
-                if (groupNow.GroupConnectCurve(floatCurves[j], out cc) == ConnectResult.Success)
+            groupNow.GroupConnectCurve(snapCurve, out mc);      
+                curveGroups.RemoveAt(ind);
+                AddToCurveGroups(groupNow, ind);
+                for (int j = 0; j < floatCurves.Count; j++)
                 {
-                    floatCurves.RemoveAt(j);
-                    j--;
-                }
+                    MetaCurve cc;
+                    if (groupNow.GroupConnectCurve(floatCurves[j], out cc) == ConnectResult.Success)
+                    {
+                        floatCurves.RemoveAt(j);
+                        j--;
+                    }
             }
         }
 
@@ -299,7 +311,7 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
             }
         }
 
-
+        
         public IEnumerable<Curve[]> GetClosedCurves()
         {
             foreach(CurveGroup g in perfectGroups)
@@ -309,7 +321,7 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
             yield break;
         }
 
-
+        
         /// <summary>
         /// this function make sure curveGroups has no two connected groups that is seperate in the list
         /// </summary>
@@ -481,6 +493,14 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                 }
             }
 
+            private void GroupClosed()
+            {
+                if(closing != null)
+                {
+                    closing.Invoke();
+                }
+            }
+
             public ConnectResult GroupConnectCurve(MetaCurve mc_in,out MetaCurve connectedCurve)
             {
                 connectedCurve = null;
@@ -496,6 +516,10 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                         }else if(connectedCurve.TailCurve != null)
                         {
                             Curves.Insert(0, connectedCurve);
+                        }
+                        if(IsClosed())
+                        {
+                            GroupClosed();
                         }
                         return ConnectResult.Success;
                     }
@@ -515,22 +539,38 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                 {
                     CurveGroup newGroup = targetGroup.GetReversedGroup();
                     this.MergeGroup(newGroup,0);
+                    if (IsClosed())
+                    {
+                        GroupClosed();
+                    }
                     return ConnectResult.Success;
                 }
                 else if (head.DistanceTo(targetTail) < CONNECT_THRESHOLD)
                 {
                     this.MergeGroup(targetGroup, 0);
+                    if (IsClosed())
+                    {
+                        GroupClosed();
+                    }
                     return ConnectResult.Success;
                 }
                 else if (tail.DistanceTo(targetTail) < CONNECT_THRESHOLD)
                 {
                     CurveGroup newGroup = targetGroup.GetReversedGroup();
                     this.MergeGroup(newGroup, 1);
+                    if (IsClosed())
+                    {
+                        GroupClosed();
+                    }
                     return ConnectResult.Success;
                 }
                 else if (tail.DistanceTo(targetHead) < CONNECT_THRESHOLD)
                 {
                     this.MergeGroup(targetGroup, 1);
+                    if (IsClosed())
+                    {
+                        GroupClosed();
+                    }
                     return ConnectResult.Success;
                 }
                 return ConnectResult.Fail;

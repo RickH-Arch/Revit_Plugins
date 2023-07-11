@@ -90,7 +90,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Cmd\Cmd_CommandFinder.cs" />
+    <Compile Include="Utils\FilledRegionCreateUpdater.cs" />
     <Compile Include="Cmd\Cmd_FilledRegionFromElement.cs" />
+    <Compile Include="Cmd\test.cs" />
     <Compile Include="UI\RegionFillFloatWIndow.cs">
       <DependentUpon>RegionCreateFloatWIndow.xaml</DependentUpon>
     </Compile>

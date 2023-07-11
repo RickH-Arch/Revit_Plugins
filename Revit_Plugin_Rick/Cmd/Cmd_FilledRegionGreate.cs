@@ -21,95 +21,42 @@ namespace Revit_Plugin_Rick
     class Cmd_FilledRegionGreate : RevitCommand
     {
         RevitTask task;
-        List<ElementId> addedCurveIds = new List<ElementId>();
-        Category newLineCat = null;
+        
+        
+        FilledRegionCreateUpdater updater;
 
         public override Result Action()
         {
+            //get basic info
             task = new RevitTask();
-            CreateNewLineStyle();
+            //CreateNewLineStyle();
+           
+
+            //init window
             var window = new FilledRegionCreateWindow(new FilledRegionCreateWindow.UnRegister(UnRegister));
             window.MainWindowHandle();
             window.Show();
 
+            //register updater
+            updater = new FilledRegionCreateUpdater(RevitDoc.Instance.App.ActiveAddInId);
+            updater.RegisterUpdater();
 
             var detailLineCommandId = RevitCommandId.LookupCommandId("ID_OBJECTS_DETAIL_CURVES");
-            Register();
+            
            
             RevitDoc.Instance.UIapp.PostCommand(detailLineCommandId);
 
-            //RevitDoc.Instance.App.DocumentChanged -= new EventHandler<DocumentChangedEventArgs>(OnDocumentChanged);
             return Result.Succeeded;
         }
 
-        
-
-        public void OnDocumentChanged(object sender, DocumentChangedEventArgs e)
-        {
-            addedCurveIds.AddRange(e.GetAddedElementIds());
-
-            foreach(ElementId id in e.GetAddedElementIds())
-            {
-                DetailCurve curve = RevitDoc.Instance.Doc.GetElement(id) as DetailCurve;
-                if (curve != null)
-                {
-                    addedCurveIds.Add(curve.Id);
-                    /*Transaction trans = new Transaction(RevitDoc.Instance.Doc, "change line style");
-                    trans.Start();
-                    curve.LineStyle = newLineCat.GetGraphicsStyle(GraphicsStyleType.Projection);
-                    trans.Commit();*/
-                }
-                
-            }
-            
-            //RevitDoc.Instance.App.DocumentChanged -= new EventHandler<DocumentChangedEventArgs>(OnDocumentChanged);
-        }
-
-        public void Register()
-        {
-            RevitDoc.Instance.App.DocumentChanged += new EventHandler<DocumentChangedEventArgs>(OnDocumentChanged);
-        }
 
         public void UnRegister()
         {
-            
             task.Run(x =>
             {
-                using (Transaction trans = new Transaction(RevitDoc.Instance.Doc, "UnRegister"))
-                {
-                    trans.Start();
-                    RevitDoc.Instance.App.DocumentChanged -= new EventHandler<DocumentChangedEventArgs>(OnDocumentChanged);
-                    trans.Commit();
-                }
+                updater.UnregisterUpdater();
             });
-            
-            
         }
-
-        public void CreateNewLineStyle()
-        {
-            
-            using(var ts = new Transaction(RevitDoc.Instance.Doc,"create new line style"))
-            {
-                ts.Start();
-                Category lineC = RevitDoc.Instance.Doc.Settings.Categories.get_Item(BuiltInCategory.OST_Lines);
-                var subC = lineC.SubCategories;
-                foreach(Category item in subC)
-                {
-                    if(item.Name == "填充边缘线")
-                    {
-                        newLineCat = item;
-                    }
-                }
-                if(newLineCat == null)
-                    newLineCat = RevitDoc.Instance.Doc.Settings.Categories.NewSubcategory(lineC, "填充边缘线");
-                
-                newLineCat.LineColor = new Color(250, 10, 10);
-                newLineCat.SetLineWeight(10, GraphicsStyleType.Projection);
-                ts.Commit();
-            }
-        }
-
 
 
     }
