@@ -29,9 +29,15 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
 
         List<CurveGroup> curveGroups = new List<CurveGroup>();
         List<MetaCurve> floatCurves = new List<MetaCurve>();
+        List<CurveGroup> originalClosedGroup = new List<CurveGroup>();
         List<CurveGroup> perfectGroups = new List<CurveGroup>();
         
         public const double CONNECT_THRESHOLD = 1.0e-6;
+
+        public RegionParser()
+        {
+            CurveGroup.closedAddEvent = new CurveGroup.ClosedAddEvent(x => originalClosedGroup.Add(x));
+        }
 
         public bool AddCurve(Curve curve)
         {
@@ -97,6 +103,8 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
 
         
 
+        
+
         /// <summary>
         /// each group and floatCurve will extend to snap other group and floatCurve
         /// If has intersection points to other groups or curves endpoints, then make join
@@ -130,14 +138,14 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                     {
                         headExpandSnap = GetSnapLine(head, headDirection, out headSnapLine);
                         if (headExpandSnap)
-                            AddSnapLine(i, new MetaCurve(headSnapLine));  
+                            GroupAddSnapLine(i, new MetaCurve(headSnapLine));  
                     }
                     Line tailSnapLine;
                     if (tailExpandSnap)
                     {
                         tailExpandSnap = GetSnapLine(tail, tailDirection, out tailSnapLine);
                         if (tailExpandSnap)
-                            AddSnapLine(i, new MetaCurve(tailSnapLine));
+                            GroupAddSnapLine(i, new MetaCurve(tailSnapLine));
                     }
                     hasSnap1 = headExpandSnap||tailExpandSnap;
                 }
@@ -154,52 +162,102 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         /// </summary>
         public void RearrangeFloatCurves()
         {
-            if (curveGroups.Count > 0) return;
-            List<MetaCurve> newLoop = new List<MetaCurve>();
-            newLoop.Add(floatCurves[0]);
-            floatCurves.RemoveAt(0);
-            while (floatCurves.Count > 0)
+            if (curveGroups.Count == 0)
+            {
+                List<MetaCurve> newLoop = new List<MetaCurve>();
+                newLoop.Add(floatCurves[0]);
+                floatCurves.RemoveAt(0);
+                while (floatCurves.Count > 0)
+                {
+                
+                    XYZ tail = newLoop[newLoop.Count - 1].Curve.GetEndPoint(1);
+                    bool headConnect = false;
+                    double dis = double.MaxValue;
+                    int ind = -1;
+                    for(int i = 0; i < floatCurves.Count; i++)
+                    {
+                        Curve c = floatCurves[i].Curve;
+                        double hd = c.GetEndPoint(0).DistanceTo(tail);
+                        if (hd< dis)
+                        {
+                            dis = hd;
+                            ind = i;
+                            headConnect = true;
+                        }
+                        double td = c.GetEndPoint(1).DistanceTo(tail);
+                        if (td < dis)
+                        {
+                            dis = td;
+                            ind = i;
+                            headConnect = false;
+                        }
+                    }
+                    Curve cNow = floatCurves[ind].Curve;
+                    if (!headConnect)
+                    {
+                        floatCurves[ind].Curve = floatCurves[ind].Curve.Reverse();
+                    }
+                    MetaCurve newMc = new MetaCurve(Line.CreateBound(tail, cNow.GetEndPoint(0)));
+                    newLoop[newLoop.Count - 1].TailCurve = newMc;
+                    newLoop.Add(newMc);
+                    newLoop[newLoop.Count - 1].TailCurve = floatCurves[ind];
+                    newLoop.Add(floatCurves[ind]);
+                    floatCurves.RemoveAt(ind);
+                }
+                CurveGroup group = new CurveGroup(newLoop);
+                curveGroups.Add(group);
+            }
+            else
             {
                 
-                XYZ tail = newLoop[newLoop.Count - 1].Curve.GetEndPoint(1);
-                bool headConnect = false;
-                double dis = double.MaxValue;
-                int ind = -1;
                 for(int i = 0; i < floatCurves.Count; i++)
                 {
-                    Curve c = floatCurves[i].Curve;
-                    double hd = c.GetEndPoint(0).DistanceTo(tail);
-                    if (hd< dis)
+                    List<MetaCurve> cs = new List<MetaCurve>() { floatCurves[i] };
+                    Line l = floatCurves[i].Curve as Line;
+                    XYZ headDir = -l.Direction;
+                    XYZ tailDir = l.Direction;
+                    XYZ head = l.GetEndPoint(0);
+                    XYZ tail = l.GetEndPoint(1);
+                    Line headSnapLine;
+                    GetSnapLine(head, headDir, out headSnapLine, true);
+                    Line tailSnapLine;
+                    GetSnapLine(tail, tailDir, out tailSnapLine, true);
+                    if(headSnapLine != null && tailSnapLine != null)
                     {
-                        dis = hd;
-                        ind = i;
-                        headConnect = true;
+                        if (headSnapLine.Length < tailSnapLine.Length)
+                        {
+                            cs.Insert(0, new MetaCurve(headSnapLine));
+                        }
+                        else
+                        {
+                            cs.Add(new MetaCurve(tailSnapLine));
+                        }
                     }
-                    double td = c.GetEndPoint(1).DistanceTo(tail);
-                    if (td < dis)
+                    else
                     {
-                        dis = td;
-                        ind = i;
-                        headConnect = false;
+                        if(headSnapLine!= null)
+                        {
+                            cs.Insert(0, new MetaCurve(headSnapLine));
+                        }
+                        if (tailSnapLine != null)
+                        {
+                            cs.Add(new MetaCurve(tailSnapLine));
+                        }
                     }
+
+                    if (cs.Count > 1)
+                    {
+                        floatCurves.RemoveAt(i);
+                        i--;
+                        CurveGroup g = new CurveGroup(cs);
+                        AddToCurveGroups(g);
+                    }
+
                 }
-                Curve cNow = floatCurves[ind].Curve;
-                if (!headConnect)
-                {
-                    floatCurves[ind].Curve = floatCurves[ind].Curve.Reverse();
-                }
-                MetaCurve newMc = new MetaCurve(Line.CreateBound(tail, cNow.GetEndPoint(0)));
-                newLoop[newLoop.Count - 1].TailCurve = newMc;
-                newLoop.Add(newMc);
-                newLoop[newLoop.Count - 1].TailCurve = floatCurves[ind];
-                newLoop.Add(floatCurves[ind]);
-                floatCurves.RemoveAt(ind);
             }
-            CurveGroup group = new CurveGroup(newLoop);
-            curveGroups.Add(group);
         }
 
-        private void AddSnapLine(int ind,MetaCurve snapCurve)
+        private void GroupAddSnapLine(int ind,MetaCurve snapCurve)
         {
             CurveGroup groupNow = curveGroups[ind];
             MetaCurve mc;
@@ -218,11 +276,11 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         }
 
 
-        private bool GetSnapLine(XYZ startPoint,XYZ direction,out Line snapLine)
+        private bool GetSnapLine(XYZ startPoint,XYZ direction,out Line snapLine,bool groupOnly = false)
         {
             List<XYZ> points;
-            snapLine = Line.CreateBound(XYZ.BasisX, XYZ.Zero);
-            var result = DetectEndPoints(startPoint, direction, out points);
+            snapLine = null;
+            var result = DetectEndPoints(startPoint, direction, out points,groupOnly);
             if (result == DetectedPointType.None) return false;
             else
             {
@@ -243,30 +301,34 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         }
 
 
-        private DetectedPointType DetectEndPoints(XYZ startPoint,XYZ direction,out List<XYZ>points)
+        private DetectedPointType DetectEndPoints(XYZ startPoint,XYZ direction,out List<XYZ>points,bool groupOnly = false)
         {
             points = new List<XYZ>();
             Line detectL = Line.CreateBound(startPoint, startPoint + direction * 1000);
-            for (int i = 0; i < floatCurves.Count; i++)
+            if (!groupOnly)
             {
-                XYZ cHead = floatCurves[i].Curve.GetEndPoint(0);
-                XYZ cTail = floatCurves[i].Curve.GetEndPoint(1);
-                XYZ headP = detectL.Evaluate(detectL.Project(cHead).Parameter, false);
-                XYZ tailP = detectL.Evaluate(detectL.Project(cTail).Parameter, false);
-                if (cHead.DistanceTo(headP) < CONNECT_THRESHOLD)
+                for (int i = 0; i < floatCurves.Count; i++)
                 {
-                    points.Add(cHead);
-                }
-                if (cTail.DistanceTo(tailP) < CONNECT_THRESHOLD)
-                {
-                    points.Add(cTail);
+                    XYZ cHead = floatCurves[i].Curve.GetEndPoint(0);
+                    XYZ cTail = floatCurves[i].Curve.GetEndPoint(1);
+                    XYZ headP = detectL.Evaluate(detectL.Project(cHead).Parameter, false);
+                    XYZ tailP = detectL.Evaluate(detectL.Project(cTail).Parameter, false);
+                    if (cHead.DistanceTo(headP) < CONNECT_THRESHOLD)
+                    {
+                        points.Add(cHead);
+                    }
+                    if (cTail.DistanceTo(tailP) < CONNECT_THRESHOLD)
+                    {
+                        points.Add(cTail);
+                    }
                 }
             }
-            //if (points.Count > 0) return DetectedPointType.FloatCurvePoint;
+            
             int count = points.Count;
             
             for(int i = 0; i < curveGroups.Count; i++)
             {
+                if (curveGroups[i].IsClosed()) continue;
                 XYZ gHead = curveGroups[i].GetGroupEndPoint(0);
                 XYZ gTail = curveGroups[i].GetGroupEndPoint(1);
                 XYZ headP = detectL.Evaluate(detectL.Project(gHead).Parameter,false);
@@ -386,6 +448,9 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         /// </summary>
         class CurveGroup
         {
+            public delegate void ClosedAddEvent(CurveGroup g);
+            public static ClosedAddEvent closedAddEvent;
+
             private List<MetaCurve> curves;
             public List<MetaCurve> Curves
             {
@@ -394,6 +459,11 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                     return curves;
                 }
             }
+
+            /// <summary>
+            /// this construction func will automatically arrage curves head and tail
+            /// </summary>
+            /// <param name="in_curves"></param>
             public CurveGroup(List<MetaCurve> in_curves):this()
             {
                 int count = in_curves.Count;
@@ -498,6 +568,10 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
                 if(closing != null)
                 {
                     closing.Invoke();
+                }
+                if(closedAddEvent != null)
+                {
+                    closedAddEvent(this);
                 }
             }
 

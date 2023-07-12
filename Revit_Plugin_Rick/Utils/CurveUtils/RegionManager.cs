@@ -112,8 +112,9 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         {
             foreach(var p in parsers)
             {
-                p.ExtendToSnapFloatCurvesAndGroups();
                 p.RearrangeFloatCurves();
+                p.ExtendToSnapFloatCurvesAndGroups();
+                
                 p.PerfectGroup();
             }
             perfected = true;
