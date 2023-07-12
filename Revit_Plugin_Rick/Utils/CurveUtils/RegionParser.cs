@@ -383,6 +383,15 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
             yield break;
         }
 
+        public IEnumerable<Curve[]> GetOriginalClosedCurves()
+        {
+            foreach(CurveGroup g in originalClosedGroup)
+            {
+                yield return g.GetCurves();
+            }
+            yield break;
+        }
+
         
         /// <summary>
         /// this function make sure curveGroups has no two connected groups that is seperate in the list
@@ -565,14 +574,15 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
 
             private void GroupClosed()
             {
-                if(closing != null)
-                {
-                    closing.Invoke();
-                }
-                if(closedAddEvent != null)
+                if (closedAddEvent != null)
                 {
                     closedAddEvent(this);
                 }
+                if (closing != null)
+                {
+                    closing.Invoke();
+                }
+                
             }
 
             public ConnectResult GroupConnectCurve(MetaCurve mc_in,out MetaCurve connectedCurve)

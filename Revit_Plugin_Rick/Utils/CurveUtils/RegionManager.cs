@@ -97,7 +97,7 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
 
         public void DetectedClosing()
         {
-            var curvesLists = GetUnionRegionCurve(0);
+            var curvesLists = GetUnionRegionCurve(0,true);
             if(closingEvent != null)
             {
                 closingEvent(curvesLists);
@@ -143,6 +143,28 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         }
 
         
+        
+        public IEnumerable<Curve[]> GetOriginalClosedCurves(int ind = -1)
+        {
+            if (ind != -1)
+            {
+                foreach (Curve[] crs in parsers[ind].GetOriginalClosedCurves())
+                {
+                    yield return crs;
+                }
+            }
+            else
+            {
+                foreach (var p in parsers)
+                {
+                    foreach (Curve[] crs in p.GetOriginalClosedCurves())
+                    {
+                        yield return crs;
+                    }
+                }
+            }
+            yield break;
+        }
 
 
         /// <summary>
@@ -151,7 +173,7 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
         /// </summary>
         /// <param name="plane"></param>
         /// <returns></returns>
-        public List<Curve[]> GetUnionRegionCurve(int ind = -1)
+        public List<Curve[]> GetUnionRegionCurve(int ind = -1,bool original = false)
         {
             if (!perfected && ind == -1) return null;
             Paths ps = new Paths();
@@ -159,71 +181,122 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
             //get all closed path
             if(ind != -1)
             {
-                foreach(var cs in GetClosedCurves(ind))
+                if (original)
                 {
-                    Path path = new Path();
-                    foreach (var c in cs)
+                    foreach (var cs in GetOriginalClosedCurves(ind))
                     {
-                        XYZ screen_head = coordConverter.Model2Screen(c.GetEndPoint(0));
-                        XYZ screen_tail = coordConverter.Model2Screen(c.GetEndPoint(1));
-                        path.Add(new IntPoint(screen_head.X * scaleFac, screen_head.Y * scaleFac));
+                        Path path = new Path();
+                        foreach (var c in cs)
+                        {
+                            XYZ screen_head = coordConverter.Model2Screen(c.GetEndPoint(0));
+                            XYZ screen_tail = coordConverter.Model2Screen(c.GetEndPoint(1));
+                            path.Add(new IntPoint(screen_head.X * scaleFac, screen_head.Y * scaleFac));
 
+                        }
+                        //csList_screen.Add(cs);
+                        ps.Add(path);
                     }
-                    //csList_screen.Add(cs);
-                    ps.Add(path);
+                }
+                else
+                {
+
+                    foreach(var cs in GetClosedCurves(ind))
+                    {
+                        Path path = new Path();
+                        foreach (var c in cs)
+                        {
+                            XYZ screen_head = coordConverter.Model2Screen(c.GetEndPoint(0));
+                            XYZ screen_tail = coordConverter.Model2Screen(c.GetEndPoint(1));
+                            path.Add(new IntPoint(screen_head.X * scaleFac, screen_head.Y * scaleFac));
+
+                        }
+                        //csList_screen.Add(cs);
+                        ps.Add(path);
+                    }
                 }
             }
             else
             {
-                foreach(var cs in GetClosedCurves())
+                if (original)
                 {
-                    Path path = new Path();
-                    foreach (var c in cs)
+                    foreach (var cs in GetOriginalClosedCurves())
                     {
-                        XYZ screen_head = coordConverter.Model2Screen(c.GetEndPoint(0));
-                        XYZ screen_tail = coordConverter.Model2Screen(c.GetEndPoint(1));
-                        path.Add(new IntPoint(screen_head.X*scaleFac, screen_head.Y*scaleFac));
-                    
+                        Path path = new Path();
+                        foreach (var c in cs)
+                        {
+                            XYZ screen_head = coordConverter.Model2Screen(c.GetEndPoint(0));
+                            XYZ screen_tail = coordConverter.Model2Screen(c.GetEndPoint(1));
+                            path.Add(new IntPoint(screen_head.X * scaleFac, screen_head.Y * scaleFac));
+
+                        }
+                        //csList_screen.Add(cs);
+                        ps.Add(path);
                     }
-                    //csList_screen.Add(cs);
-                    ps.Add(path);
+                }
+                else
+                {
+                    foreach(var cs in GetClosedCurves())
+                    {
+                        Path path = new Path();
+                        foreach (var c in cs)
+                        {
+                            XYZ screen_head = coordConverter.Model2Screen(c.GetEndPoint(0));
+                            XYZ screen_tail = coordConverter.Model2Screen(c.GetEndPoint(1));
+                            path.Add(new IntPoint(screen_head.X*scaleFac, screen_head.Y*scaleFac));
+                    
+                        }
+                        //csList_screen.Add(cs);
+                        ps.Add(path);
+                    }
                 }
             }
 
             //union
-            for(int i = 0; i < ps.Count; i++)
+            GetUnionPaths(ps);
+
+            //back to revit curve
+            return PathToRevitCurve(ps);
+        }
+
+
+        private void GetUnionPaths(Paths ps)
+        {
+            for (int i = 0; i < ps.Count; i++)
             {
                 //Paths subj = new Paths(1);
                 //subj.Add(ps[i].points);
-                for (int j = i+1; j < ps.Count; j++)
+                for (int j = i + 1; j < ps.Count; j++)
                 {
                     //Paths clip = new Paths(1);
                     //clip.Add(ps[j].points);
 
                     Clipper c = new Clipper();
-                    
+
                     c.AddPath(ps[i], PolyType.ptSubject, true);
                     c.AddPath(ps[j], PolyType.ptClip, true);
                     Paths solution = new Paths();
                     if (c.Execute(ClipType.ctUnion, solution))
                     {
                         if (solution.Count == 2) continue;
-                        ps[i]= solution[0];
+                        ps[i] = solution[0];
                         //i--;
                         ps.RemoveAt(j);
+                        j--;
                     }
                 }
             }
+        }
 
-            //back to revit curve
+        private List<Curve[]> PathToRevitCurve(Paths ps)
+        {
             List<Curve[]> results = new List<Curve[]>();
-            foreach(var path in ps)
+            foreach (var path in ps)
             {
                 List<Curve> curves = new List<Curve>();
-                for(int i = 0; i < path.Count; i++)
+                for (int i = 0; i < path.Count; i++)
                 {
-                    XYZ screenHead = new XYZ(path[i].X/scaleFac, path[i].Y/scaleFac, 0);
-                    XYZ screenTail = new XYZ(path[(i + 1) % path.Count].X/scaleFac, path[(i + 1) % path.Count].Y/scaleFac, 0);
+                    XYZ screenHead = new XYZ(path[i].X / scaleFac, path[i].Y / scaleFac, 0);
+                    XYZ screenTail = new XYZ(path[(i + 1) % path.Count].X / scaleFac, path[(i + 1) % path.Count].Y / scaleFac, 0);
                     XYZ modelHead = coordConverter.Screen2Model(screenHead);
                     XYZ modelTail = coordConverter.Screen2Model(screenTail);
                     Line l = Line.CreateBound(modelHead, modelTail);
@@ -234,9 +307,7 @@ namespace Revit_Plugin_Rick.Utils.CurveUtils
 
             return results;
         }
-
-        
-
-
     }
+
+    
 }

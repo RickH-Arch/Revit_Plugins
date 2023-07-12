@@ -5,9 +5,14 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Revit_Plugin_Rick.UI"
              mc:Ignorable="d" 
-             Width="450" Height="650" Title="Create Filled region"
+             Width="450" Height="500" Title="Create Filled region"
              Closing="Window_Closing">
-    <Grid>
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="0.5*"/>
+        </Grid.RowDefinitions>
             
     </Grid>
 </Window>
